@@ -16,7 +16,7 @@
 <style>
 :root{
   --bg:#f2f2f7;--card:#fff;--fg:#000;--muted:#8a8a8e;--sep:rgba(60,60,67,.18);--fill:rgba(120,120,128,.14);--fill2:rgba(120,120,128,.24);
-  --heat:#ff6b1a;--heat-bg:linear-gradient(160deg,#ff8a3d,#ff5a1f);--eco:#30b07a;--frost:#2f8cff;--off:#8e8e93;--sched:#8e5cf7;--boost:#ff3b30;
+  --heat:#ff6b1a;--heat-bg:linear-gradient(160deg,#ff8a3d,#ff5a1f);--eco:#30b07a;--frost:#2f8cff;--off:#8e8e93;--sched:#8e5cf7;--boost:#ff3b30;--comfort:#f5bd1f;
   --seg-on:#fff;--sheet:var(--bg);--sheet-card:var(--card);--accent:#ff6b1a;--green:#34c759;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);color-scheme:light
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -286,7 +286,7 @@ const HELP = {
 
 const MODES = [
   { key: 'program', icon: 'clock', color: 'var(--sched)' },
-  { key: 'comfort', code: '0', icon: 'sun', color: 'var(--heat)', sp: 'consigne_confort' },
+  { key: 'comfort', code: '0', icon: 'sun', color: 'var(--comfort)', sp: 'consigne_confort' },
   { key: 'eco', code: '3', icon: 'leaf', color: 'var(--eco)', sp: 'consigne_eco' },
   { key: 'frost', code: '2', icon: 'snow', color: 'var(--frost)', sp: 'consigne_hg' },
   { key: 'boost', code: '4', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' },
