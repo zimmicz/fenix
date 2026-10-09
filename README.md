@@ -17,7 +17,7 @@ The app has a step-by-step **Setup guide** (Czech and English) on its welcome sc
 6. Install ntfy, subscribe to the topic from Settings, send a test. Add your rooms' windows.
 7. Optional: a [healthchecks.io](https://healthchecks.io) check (period 1 h, grace 1 h, ntfy integration) with its ping URL in secret `HC_PING_URL` alerts you when the robot stops.
 
-The job runs hourly (about 720 of the 2000 free Actions minutes per month for private repos).
+The job runs hourly (about 720 of the 2000 free Actions minutes per month for private repos). The app warns when the last run is more than 2 hours old.
 
 ## Sun control
 
@@ -25,7 +25,7 @@ Add each room's windows in Settings (direction, width × height in metres, how m
 
 `gain = Σ width × height × count × irradiance × 0.6` (0.6 ≈ share of sunlight passing double glazing as heat)
 
-An hour is **sunny** for a room when the gain is at least *share* (default 50 %) of the room's heater power. On a sunny day the room goes to eco *lead* hours (default 3) before the first sunny hour, because the floor needs time to cool, and goes back to its previous mode after the last sunny hour, or earlier if clouds wipe out the remaining sun. A room you change by hand is left alone for the rest of the day. Bathrooms usually want sun control off.
+An hour is **sunny** for a room when the gain is at least *share* (default 50 %) of the room's heater power. On a sunny day the room goes to eco *lead* hours (default 3) before the first sunny hour, because the floor needs time to cool, and goes back to its previous mode after the last sunny hour, or earlier if clouds wipe out the remaining sun. A room you change by hand is left alone for the rest of the day, and rooms already on eco, frost, off or boost are not touched. Zones reporting 0 W heater power are skipped. Bathrooms usually want sun control off.
 
 With *Switch rooms to eco automatically* off you only get the evening heads-up (default 18:00): "Tomorrow: Obyvak sun 10–15 h, eco from 07 h".
 

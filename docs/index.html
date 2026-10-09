@@ -181,7 +181,7 @@ const TEXT = {
     welcome: 'Welcome', welcomeText: 'Sign in with your Fenix account to control your floor heating.', signIn: 'Sign in', howItWorks: 'How it works',
     outside: 'Outside {0}°', nHeating: '{0} heating', nothingHeating: 'Nothing heating', loading: 'Loading…',
     checkRan: 'Hourly check ran at {0}', noCheckH: 'No hourly check for {0} h', noCheckD: 'No hourly check for {0} days',
-    lastRan: 'Last one ran {0}. Check the GitHub Actions page of your repository.', stillEco: 'Still on eco from sun control: {0}. Switch them back by hand if needed.',
+    lastRan: 'Last one ran {0}. Check your cron-job.org job and the Actions tab of your repository.', stillEco: 'Still on eco from sun control: {0}. Switch them back by hand if needed.',
     heating: 'Heating', idle: 'Idle', target: 'target {0}°', temperatures: 'Temperatures', lower: 'Lower {0}', raise: 'Raise {0}',
     today: 'Today', tomorrow: 'Tomorrow', above: 'above', below: 'below', aboveC: 'Above', belowC: 'Below',
     sunPlan: 'sun {0}–{1}, eco from {2}', notEnoughSun: 'not enough sun', sunOff: 'Sun control off', ecoNow: 'Eco now',
@@ -203,7 +203,7 @@ const TEXT = {
     useSun: 'Use sun for this room', heater: 'Heater {0} kW.', heaterUnknown: 'Heater power unknown.', windowN: 'Window {0}', faces: 'Faces', width: 'Width', height: 'Height', howMany: 'How many', identical: 'identical windows', removeWindow: 'Remove window', addWindow: 'Add window',
     measureGlass: 'Measure the glass, not the frame. Floor-to-ceiling panel ≈ 1 × 2.5 m.',
     fenixAccount: 'Fenix account', email: 'Email', password: 'Password', required: 'Required', fenixNote: 'Same login as the official Fenix app. Stored only on this device.', signedIn: 'Signed in',
-    repository: 'Repository', token: 'Token', connect: 'Connect', connected: 'Connected', ghSheetNote: 'Your private repository with the hourly workflow. Use a fine-grained token limited to that repository with Contents: read and write.',
+    repository: 'Repository', token: 'Token', connect: 'Connect', connected: 'Connected', ghSheetNote: 'Your private repository with the hourly workflow. Use the key from step 7 of the setup guide (fine-grained, only that repository, Contents: read and write).',
     latitude: 'Latitude', longitude: 'Longitude', useThese: 'Use these', locNote: 'Leave empty to use the location of your Fenix home.', useMyLocation: 'Use my current location',
     nWindows: n => `${n} window${n === 1 ? '' : 's'}`
   },
@@ -220,7 +220,7 @@ const TEXT = {
     welcome: 'Vítej', welcomeText: 'Přihlas se účtem Fenix a ovládej podlahové topení.', signIn: 'Přihlásit', howItWorks: 'Jak to funguje',
     outside: 'Venku {0}°', nHeating: 'Topí: {0}', nothingHeating: 'Nic netopí', loading: 'Načítám…',
     checkRan: 'Hodinová kontrola proběhla v {0}', noCheckH: 'Žádná hodinová kontrola už {0} h', noCheckD: 'Žádná hodinová kontrola už {0} dní',
-    lastRan: 'Naposledy proběhla {0}. Zkontroluj stránku GitHub Actions ve svém repozitáři.', stillEco: 'Pořád v útlumu kvůli slunci: {0}. Případně je přepni zpátky ručně.',
+    lastRan: 'Naposledy proběhla {0}. Zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři.', stillEco: 'Pořád v útlumu kvůli slunci: {0}. Případně je přepni zpátky ručně.',
     heating: 'Topí', idle: 'Netopí', target: 'cíl {0}°', temperatures: 'Teploty', lower: 'Snížit {0}', raise: 'Zvýšit {0}',
     today: 'Dnes', tomorrow: 'Zítra', above: 'nad', below: 'pod', aboveC: 'Nad', belowC: 'Pod',
     sunPlan: 'slunce {0}–{1}, útlum od {2}', notEnoughSun: 'málo slunce', sunOff: 'Řízení podle slunce vypnuto', ecoNow: 'Teď útlum',
@@ -242,7 +242,7 @@ const TEXT = {
     useSun: 'Řídit podle slunce', heater: 'Topení {0} kW.', heaterUnknown: 'Výkon topení neznámý.', windowN: 'Okno {0}', faces: 'Směr', width: 'Šířka', height: 'Výška', howMany: 'Počet', identical: 'stejných oken', removeWindow: 'Odebrat okno', addWindow: 'Přidat okno',
     measureGlass: 'Měř sklo, ne rám. Okno od podlahy ke stropu ≈ 1 × 2,5 m.',
     fenixAccount: 'Účet Fenix', email: 'E-mail', password: 'Heslo', required: 'Povinné', fenixNote: 'Stejné přihlášení jako v oficiální aplikaci Fenix. Uloží se jen v tomto zařízení.', signedIn: 'Přihlášeno',
-    repository: 'Repozitář', token: 'Token', connect: 'Připojit', connected: 'Připojeno', ghSheetNote: 'Tvůj soukromý repozitář s hodinovým workflow. Použij fine-grained token omezený na tento repozitář s oprávněním Contents: read and write.',
+    repository: 'Repozitář', token: 'Token', connect: 'Připojit', connected: 'Připojeno', ghSheetNote: 'Tvůj soukromý repozitář s hodinovým workflow. Použij klíč z kroku 7 návodu (fine-grained, jen tento repozitář, Contents: read and write).',
     latitude: 'Zeměpisná šířka', longitude: 'Zeměpisná délka', useThese: 'Použít', locNote: 'Nech prázdné a použije se poloha domácnosti Fenix.', useMyLocation: 'Použít moji aktuální polohu',
     nWindows: n => `${n} ${n === 1 ? 'okno' : n < 5 ? 'okna' : 'oken'}`
   }
@@ -250,24 +250,24 @@ const TEXT = {
 
 const HELP = {
   en: [
-    ['What this is', 'A remote control for your Fenix floor heating plus a robot that checks the weather every hour. The robot runs on GitHub in your private repository, even when your phone is off.'],
+    ['What this is', 'A remote control for your Fenix floor heating plus a robot that checks the weather every hour. The robot runs on GitHub in your private repository, started every hour by cron-job.org, even when your phone is off.'],
     ['Home', 'Each tile is a room: current temperature, its mode and target. Orange tiles are heating right now. Tap a tile to change the mode or the comfort and eco temperatures. Changes take up to a minute to reach the unit; the app tells you when the unit confirmed.'],
     ['Modes', 'Schedule = the room follows its weekly program. Comfort and Eco = fixed temperature you set below. Frost = only protects from freezing. Off = no heating. Schedule restores the program the room had before.'],
     ['Sun control', 'Floor heating reacts slowly, so on a sunny day it keeps pumping heat while the sun is already warming the room through the windows. Tell the app where each room\'s windows face and how big they are. Every hour the robot checks the forecast and works out when the sun will really heat each room.'],
-    ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If clouds come at 12:00, it switches back at 13:00. If you change the room by hand, the robot leaves it alone that day.'],
+    ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If the forecast loses the sun earlier, it switches back at the next hourly check. If you change the room by hand, the robot leaves it alone that day. Rooms already on eco, frost, off or boost are not touched.'],
     ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
     ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
-    ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Nothing gets damaged: eco only means a cooler room.']
+    ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Then check your cron-job.org job and the Actions tab of your repository. Nothing gets damaged: eco only means a cooler room.']
   ],
   cs: [
-    ['Co to je', 'Dálkové ovládání podlahového topení Fenix a robot, který každou hodinu kontroluje počasí. Robot běží na GitHubu ve tvém soukromém repozitáři, i když máš vypnutý telefon.'],
+    ['Co to je', 'Dálkové ovládání podlahového topení Fenix a robot, který každou hodinu kontroluje počasí. Robot běží na GitHubu ve tvém soukromém repozitáři, každou hodinu ho spouští cron-job.org, i když máš vypnutý telefon.'],
     ['Domů', 'Každá dlaždice je jedna místnost: aktuální teplota, režim a cílová teplota. Oranžové dlaždice právě topí. Klepnutím na dlaždici změníš režim nebo teplotu komfortu a útlumu. Změna se do jednotky dostane až za minutu, aplikace ukáže, až ji jednotka potvrdí.'],
     ['Režimy', 'Program = místnost jede podle týdenního programu. Komfort a Útlum = pevná teplota, kterou nastavíš níž. Nezámrz = jen ochrana proti zamrznutí. Vypnuto = netopí. Program vrátí místnost do programu, který měla předtím.'],
     ['Řízení podle slunce', 'Podlahové topení reaguje pomalu, takže za slunečného dne dál topí, i když místnost už ohřívá slunce okny. Řekni aplikaci, kam okna v každé místnosti míří a jak jsou velká. Robot každou hodinu projde předpověď a spočítá, kdy slunce každou místnost opravdu ohřeje.'],
-    ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když ve 12:00 přijdou mraky, vrátí ji ve 13:00. Když místnost přepneš ručně, robot ji ten den nechá být.'],
+    ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když předpověď slunce ztratí dřív, vrátí ji při nejbližší hodinové kontrole. Když místnost přepneš ručně, robot ji ten den nechá být. Místnosti, které už jsou v útlumu, nezámrzu, vypnuté nebo v boostu, nechává být.'],
     ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
     ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
-    ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Nic se nepokazí: útlum znamená jen chladnější místnost.']
+    ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Pak zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři. Nic se nepokazí: útlum znamená jen chladnější místnost.']
   ]
 }
 
