@@ -358,20 +358,22 @@ async function login () {
   })
   if (r.status === 401) throw new Error(t('errWrongLogin'))
   if (!r.ok) throw new Error(t('errSignIn', r.status))
-  S.token = (await r.json()).access_token
+  const tok = await r.json()
+  S.token = tok.access_token
+  S.tokenExp = Date.now() + ((tok.expires_in || 300) - 30) * 1000
   const u = await api('human/user/read/', { email })
   if (!u.smarthomes?.length) throw new Error(t('errNoHome'))
   const home = u.smarthomes[0]
   S.home = { id: home.smarthome_id, lat: Number(home.latitude), lon: Number(home.longitude) }
 }
 
-async function api (endpoint, form, ok = [1, 8], retry = true) {
+async function api (endpoint, form, ok = [1, 8]) {
+  if (Date.now() > S.tokenExp) await login()
   const r = await fetch(`https://${HOST}/api/v0.1/${endpoint}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${S.token}` },
     body: new URLSearchParams(form)
   })
-  if (r.status === 401 && retry) { await login(); return api(endpoint, form, ok, false) }
   if (!r.ok) throw new Error(t('errFenix', r.status))
   const j = await r.json()
   if (!ok.includes(Number(j.code?.code))) throw new Error(`Fenix: ${j.code?.value || j.code?.key}`)
