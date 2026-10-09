@@ -189,7 +189,7 @@ const TEXT = {
   en: {
     appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
     usage: 'Usage', monthSoFar: 'This month so far', monthProjected: 'This month, projected', atThisPace: 'at the current pace', setPrice: 'Set your price per kWh to see costs',
-    byRoomMonth: 'By room, this month', yearToDate: 'This year so far', lastYear: 'Last year', lastYearNote: 'at your current price',
+    byRoomMonth: 'By room, this month',
     usageNote: 'From the Fenix unit\'s own statistics, the same as in the official app. Costs use your price per kWh from Settings.',
     electricity: 'Electricity', pricePerKwh: 'Price per kWh', priceNote: 'All-in price including distribution and VAT. Stored only on this device.',
     nDays: n => `${n} day${n === 1 ? '' : 's'}`,
@@ -238,7 +238,7 @@ const TEXT = {
   cs: {
     appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
     usage: 'Spotřeba', monthSoFar: 'Tento měsíc zatím', monthProjected: 'Tento měsíc, odhad', atThisPace: 'při současném tempu', setPrice: 'Zadej cenu za kWh a uvidíš náklady',
-    byRoomMonth: 'Podle místností, tento měsíc', yearToDate: 'Letos zatím', lastYear: 'Loni', lastYearNote: 'za tvou současnou cenu',
+    byRoomMonth: 'Podle místností, tento měsíc',
     usageNote: 'Čísla jsou ze statistik jednotky Fenix, stejné jako v oficiální aplikaci. Náklady počítá s cenou za kWh z Nastavení.',
     electricity: 'Elektřina', pricePerKwh: 'Cena za kWh', priceNote: 'Celková cena včetně distribuce a DPH. Uloží se jen v tomto zařízení.',
     nDays: n => `${n} ${n === 1 ? 'den' : n < 5 ? 'dny' : 'dní'}`,
@@ -843,7 +843,6 @@ function forecastView () {
 const ROOM_COLORS = ['#ff6b1a', '#2f8cff', '#30b07a', '#8e5cf7', '#f5bd1f', '#ff3b30', '#00a3a3', '#8e8e93']
 const kwh = v => `${num1(v)} kWh`
 
-const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
 const dayRooms = day => Object.entries(day || {}).filter(([k]) => k !== 'all').map(([k, v]) => [k, Number(v?.conso_day) || 0])
 const daySum = day => dayRooms(day).reduce((a, [, v]) => a + v, 0)
 
@@ -874,11 +873,6 @@ function usageView () {
   const projected = elapsed ? soFar / elapsed * inMonth : 0
   const lastTotal = Object.values(last).reduce((a, d) => a + daySum(d), 0)
   const roomMonth = nums.map(k => [k, Object.values(cur).reduce((a, d) => a + (dayRooms(d).find(([n]) => n === k)?.[1] || 0), 0)]).sort((a, b) => b[1] - a[1])
-  const devs = Object.values(u.devices || {})
-  const months = MONTHS.map(m => devs.reduce((a, d) => a + (Number(d.monthly_conso?.[m]) || 0), 0))
-  const ytd = months.slice(0, curMonth).reduce((a, b) => a + b, 0)
-  const lastYear = devs.reduce((a, d) => a + (Number(d.last_year_conso) || 0), 0)
-  const mmax = Math.max(...months, 0.1)
   const monthName = (m, y) => new Date(y, m - 1, 1).toLocaleDateString(locale(), { month: 'long' })
   const row = (label, v, small) => h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, label), small ? h('small', {}, small) : null),
     h('div', { class: 'two', style: 'flex:none;text-align:right' }, h('span', {}, kwh(v)), price ? h('small', {}, cost(v)) : null))
@@ -897,13 +891,6 @@ function usageView () {
     h('div', { class: 'group' }, roomMonth.map(([k, v]) => h('div', { class: 'row' },
       h('span', { class: 'dot', style: `background:${color(k)}` }), h('span', { class: 'label' }, zoneName(k)),
       h('span', { class: 'value' }, `${kwh(v)}${money(v)} · ${soFar ? Math.round(v / soFar * 100) : 0} %`)))),
-    h('div', { class: 'section' }, String(curYear)),
-    h('div', { class: 'group' },
-      h('div', { class: 'ubars', style: 'gap:3px' }, months.map((v, i) => h('div', { class: 'ucol' },
-        h('div', { class: 'ubar' }, v ?h('i', { style: `height:${v / mmax * 100}%;background:var(--accent)` }) : null),
-        h('b', {}, new Date(curYear, i, 1).toLocaleDateString(locale(), { month: 'narrow' }))))),
-      row(t('yearToDate'), ytd),
-      lastYear ? row(t('lastYear'), lastYear, t('lastYearNote')) : null),
     h('div', { class: 'note' }, t('usageNote'))
   ]
 }
