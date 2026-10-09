@@ -7,16 +7,16 @@ Replacement for the Fenix V24 WiFi floor heating app, plus weather-forecast noti
 
 ## Setup
 
-1. Create a **private** GitHub repo (it will hold your heating log, which reveals when you are home).
-2. Copy `template/.github/workflows/heating.yml` from this repo into it.
-3. Repo → Settings → Secrets and variables → Actions: add `FENIX_EMAIL` and `FENIX_PASSWORD`.
-4. Create a [fine-grained token](https://github.com/settings/personal-access-tokens/new): only your new repo, permission *Contents: Read and write*.
-5. Open the web app → Settings: enter your Fenix login, the repo (`you/repo`) and the token, tap *Load config*.
-6. Add each room's windows, *Save*.
-7. Install the ntfy app, subscribe to the topic shown in Settings, tap *Send test*.
-8. Optional, recommended: alert when the hourly job stops. At [healthchecks.io](https://healthchecks.io) (free) create a check with period 1 hour, grace 1 hour; under Integrations add *ntfy* with your topic and server `https://ntfy.sh`. Copy the check's ping URL into a repo secret `HC_PING_URL`. Every run pings it; a failed run pings `/fail`; no ping for 2 hours sends you an alert.
+The app has a step-by-step **Setup guide** (Czech and English) on its welcome screen, readable before signing in. In short:
 
-The job runs hourly (about 720 of the 2000 free Actions minutes per month for private repos). Run it once by hand: Actions → heating → Run workflow.
+1. Open https://www.zimmi.cz/fenix/ in Safari → Share → Add to Home Screen, sign in with your Fenix login. That is enough for remote control.
+2. For the weather robot: [create a private repository from the template](https://github.com/new?template_name=fenix-template&template_owner=zimmicz) (`zimmicz/fenix-template`). Keep it **private**: the log reveals when you are home.
+3. Repository → Settings → Secrets and variables → Actions: add `FENIX_EMAIL` and `FENIX_PASSWORD`. Actions → heating → Run workflow.
+4. Create a [fine-grained token](https://github.com/settings/personal-access-tokens/new): only your repository, *Contents: Read and write*. In the app: Settings → GitHub.
+5. Install ntfy, subscribe to the topic from Settings, send a test. Add your rooms' windows.
+6. Optional: a [healthchecks.io](https://healthchecks.io) check (period 1 h, grace 1 h, ntfy integration) with its ping URL in secret `HC_PING_URL` alerts you when the robot stops.
+
+The job runs hourly (about 720 of the 2000 free Actions minutes per month for private repos).
 
 ## Sun control
 

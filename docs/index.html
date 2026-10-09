@@ -98,6 +98,7 @@ input,select,textarea{font:inherit;color:inherit}
 
 .warn{background:rgba(255,59,48,.12);color:var(--fg);border-radius:16px;padding:12px 16px;margin:-6px 0 14px;font-size:15px;display:flex;flex-direction:column;gap:4px}.warn b{color:var(--red)}
 .help{background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.help h3{margin:0 0 6px;font-size:17px}.help p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
+.step{display:flex;gap:12px;background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.step .num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}.step .body{min-width:0}.step h3{margin:3px 0 6px;font-size:17px}.step p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}.step .link{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;text-decoration:none;font-size:15px}
 .empty{background:var(--card);border-radius:22px;padding:28px 22px;text-align:center;box-shadow:var(--shadow)}
 .empty svg{width:56px;height:56px;color:var(--accent)}
 .empty h2{margin:12px 0 6px;font-size:22px}
@@ -168,7 +169,7 @@ const ICONS = {
 
 const TEXT = {
   en: {
-    appName: 'Heating', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
+    appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
     done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
     m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Boost', m_off: 'Off',
     met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
@@ -207,7 +208,7 @@ const TEXT = {
     nWindows: n => `${n} window${n === 1 ? '' : 's'}`
   },
   cs: {
-    appName: 'Topení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
+    appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
     done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
     m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Boost', m_off: 'Vypnuto',
     met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
@@ -531,7 +532,7 @@ async function refresh () {
       s.email && act(loadZones)(),
       s.repo && s.ghToken && act(loadConfig)()
     ])
-    await act(loadForecast)()
+    if (s.email || S.config) await act(loadForecast)()
   } finally {
     S.loading = false
     render()
@@ -567,6 +568,7 @@ function zonesView () {
   if (!s.email) {
     return [header(t('appName')), h('div', { class: 'empty' }, icon('flame'), h('h2', {}, t('welcome')), h('p', {}, t('welcomeText')),
       h('button', { class: 'btn', onclick: () => openSheet({ type: 'login' }) }, t('signIn')),
+      h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn secondary', onclick: () => openSheet({ type: 'setup' }) }, t('setupGuide'))),
       h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn secondary', onclick: () => openSheet({ type: 'help' }) }, t('howItWorks'))))]
   }
   const zones = S.zones
@@ -695,6 +697,7 @@ function settingsView () {
   return [
     header(t('settings')),
     h('div', { class: 'group' },
+      navRow(t('setupGuide'), null, () => openSheet({ type: 'setup' })),
       navRow(t('howItWorks'), null, () => openSheet({ type: 'help' })),
       h('label', { class: 'row' }, h('span', { class: 'label' }, t('language')),
         h('select', {
@@ -831,10 +834,73 @@ function roomSheet (label) {
   ]
 }
 
+
+const LINKS = {
+  signup: 'https://github.com/signup',
+  template: 'https://github.com/new?template_name=fenix-template&template_owner=zimmicz',
+  token: 'https://github.com/settings/personal-access-tokens/new',
+  ntfy: 'https://apps.apple.com/app/ntfy/id1625396347',
+  hc: 'https://healthchecks.io'
+}
+
+const SETUP = {
+  en: {
+    intro: 'Steps 1–2 are enough to control your heating from the phone. Steps 3–10 add the hourly robot: weather notifications and sun control. It takes about 15 minutes and everything is free.',
+    basic: 'Remote control', robot: 'Weather robot (optional)', extra: 'Extra safety (optional)',
+    steps: [
+      ['Add the app to your Home Screen', 'Open this page in Safari, tap Share (square with an arrow) → Add to Home Screen. It then opens fullscreen like any other app.'],
+      ['Sign in with Fenix', 'Use the same email and password as the official Fenix app. They are stored only on this phone.', null, 'signin'],
+      ['Create a GitHub account', 'GitHub runs the robot for free, every hour, even when your phone is off.', ['Sign up at GitHub', 'signup']],
+      ['Create your robot', 'Tap the button, name the repository (for example heating), choose Private and tap Create repository. Private matters: the robot keeps a log that shows when you are at home.', ['Create from template', 'template']],
+      ['Give the robot your Fenix login', 'In your new repository: Settings → Secrets and variables → Actions → New repository secret. Add FENIX_EMAIL with your Fenix email, then FENIX_PASSWORD with your password. GitHub keeps them encrypted.'],
+      ['Start the robot', 'Open the Actions tab, confirm enabling workflows if asked, choose heating → Run workflow. After about a minute it turns green, and from then on it runs every hour by itself.'],
+      ['Create a key for this app', 'Repository access: Only select repositories → your repository. Permissions → Repository permissions → Contents: Read and write. Tap Generate token and copy it (it starts with github_pat_).', ['Create token', 'token']],
+      ['Connect the app', 'In this app: Settings → GitHub. Repository = your-name/heating, Token = the key from step 7. Tap Connect.', null, 'github'],
+      ['Turn on notifications', 'Install ntfy. In this app tap Settings → Copy topic. In ntfy tap +, paste the topic and subscribe. Back here, tap Send test notification.', ['ntfy in the App Store', 'ntfy']],
+      ['Add your windows', 'Settings → Rooms & windows: for each room add its windows (direction, width × height, how many). Check the plan in the Forecast tab for a few days, then turn on Switch rooms to eco automatically.'],
+      ['Get alerted if the robot stops', 'At healthchecks.io create a check with period 1 hour and grace 1 hour. Under Integrations add ntfy with your topic and server https://ntfy.sh. Copy the check\'s ping URL into a repository secret named HC_PING_URL, same as step 5.', ['Open healthchecks.io', 'hc']]
+    ]
+  },
+  cs: {
+    intro: 'Kroky 1–2 stačí k ovládání topení z telefonu. Kroky 3–10 přidají hodinového robota: upozornění podle počasí a řízení podle slunce. Zabere to asi 15 minut a vše je zdarma.',
+    basic: 'Dálkové ovládání', robot: 'Robot podle počasí (volitelné)', extra: 'Pojistka navíc (volitelné)',
+    steps: [
+      ['Přidej aplikaci na plochu', 'Otevři tuhle stránku v Safari, klepni na Sdílet (čtverec se šipkou) → Přidat na plochu. Pak se otevírá přes celou obrazovku jako jiné aplikace.'],
+      ['Přihlas se do Fenixu', 'Stejný e-mail a heslo jako v oficiální aplikaci Fenix. Uloží se jen v tomhle telefonu.', null, 'signin'],
+      ['Založ si účet na GitHubu', 'GitHub zdarma pouští robota každou hodinu, i když máš vypnutý telefon.', ['Registrace na GitHubu', 'signup']],
+      ['Vytvoř si robota', 'Klepni na tlačítko, pojmenuj repozitář (třeba topeni), zvol Private a klepni na Create repository. Soukromý musí být: robot si vede záznam, ze kterého je vidět, kdy jsi doma.', ['Vytvořit ze šablony', 'template']],
+      ['Dej robotovi přihlášení k Fenixu', 'V novém repozitáři: Settings → Secrets and variables → Actions → New repository secret. Přidej FENIX_EMAIL s e-mailem k Fenixu a pak FENIX_PASSWORD s heslem. GitHub je drží zašifrované.'],
+      ['Spusť robota', 'Otevři záložku Actions, případně potvrď zapnutí workflows, vyber heating → Run workflow. Asi za minutu zezelená a od té doby běží každou hodinu sám.'],
+      ['Vytvoř klíč pro tuhle aplikaci', 'Repository access: Only select repositories → tvůj repozitář. Permissions → Repository permissions → Contents: Read and write. Klepni na Generate token a zkopíruj ho (začíná github_pat_).', ['Vytvořit token', 'token']],
+      ['Připoj aplikaci', 'V této aplikaci: Nastavení → GitHub. Repozitář = tvoje-jméno/topeni, Token = klíč z kroku 7. Klepni na Připojit.', null, 'github'],
+      ['Zapni notifikace', 'Nainstaluj ntfy. Tady klepni na Nastavení → Zkopírovat téma. V ntfy klepni na +, vlož téma a přihlas se k odběru. Pak tady klepni na Poslat testovací notifikaci.', ['ntfy v App Store', 'ntfy']],
+      ['Zadej okna', 'Nastavení → Místnosti a okna: u každé místnosti přidej okna (směr, šířka × výška, počet). Pár dní sleduj plán v záložce Předpověď a pak zapni Automaticky přepínat na útlum.'],
+      ['Upozornění, když se robot zastaví', 'Na healthchecks.io vytvoř check s periodou 1 hodina a grace 1 hodina. V Integrations přidej ntfy s tvým tématem a serverem https://ntfy.sh. Ping URL checku ulož jako secret HC_PING_URL v repozitáři, stejně jako v kroku 5.', ['Otevřít healthchecks.io', 'hc']]
+    ]
+  }
+}
+
+function setupSheet () {
+  const g = SETUP[lang()]
+  const step = (i, [head, body, link, action]) => h('div', { class: 'step' },
+    h('div', { class: 'num' }, String(i + 1)),
+    h('div', { class: 'body' }, h('h3', {}, head), h('p', {}, body),
+      link ? h('a', { class: 'link', href: LINKS[link[1]], target: '_blank', rel: 'noopener' }, link[0] + ' ↗') : null,
+      action === 'signin' && !store.get().email ? h('button', { class: 'link', onclick: () => openSheet({ type: 'login' }) }, t('signIn')) : null,
+      action === 'github' && !store.get().repo ? h('button', { class: 'link', onclick: () => openSheet({ type: 'github' }) }, t('connect')) : null))
+  return [
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, t('setupGuide')), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
+    h('div', { class: 'note', style: 'margin:0 4px 8px' }, g.intro),
+    h('div', { class: 'section' }, g.basic), g.steps.slice(0, 2).map((s, i) => step(i, s)),
+    h('div', { class: 'section' }, g.robot), g.steps.slice(2, 10).map((s, i) => step(i + 2, s)),
+    h('div', { class: 'section' }, g.extra), step(10, g.steps[10])
+  ]
+}
 function helpSheet () {
   return [
     h('div', { class: 'sheet-hdr' }, h('h2', {}, t('howItWorks')), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
-    HELP[lang()].map(([head, body]) => h('div', { class: 'help' }, h('h3', {}, head), h('p', {}, body)))
+    HELP[lang()].map(([head, body]) => h('div', { class: 'help' }, h('h3', {}, head), h('p', {}, body))),
+    h('div', { class: 'group', style: 'margin-top:16px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'setup' }) }, t('setupGuide')))
   ]
 }
 
@@ -863,6 +929,7 @@ function sheetContent () {
   if (sh.type === 'rule') return ruleSheet(sh.index)
   if (sh.type === 'room') return roomSheet(sh.label)
   if (sh.type === 'help') return helpSheet()
+  if (sh.type === 'setup') return setupSheet()
   if (sh.type === 'login') {
     return formSheet(t('fenixAccount'), [['email', t('email'), 'email', 'you@example.com', s.email], ['password', t('password'), 'password', t('required'), s.password]], t('signIn'), async v => {
       store.set(v)

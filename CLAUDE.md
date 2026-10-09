@@ -13,7 +13,7 @@ go run . log                                    # appends rows to data/log.csv (
 go run . forecast                               # rules from config.json, state in data/state.json, ntfy push
 ```
 
-Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, no deps. Talks to Fenix, Open-Meteo, ntfy and the GitHub contents API (user's private repo `config.json`) straight from the browser. Template workflow for users: `template/.github/workflows/heating.yml`.
+Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, no deps. Talks to Fenix, Open-Meteo, ntfy and the GitHub contents API (user's private repo `config.json`) straight from the browser. User workflow lives in the template repo `zimmicz/fenix-template` (local `~/dev/fenix-template`); change it there.
 
 ## Architecture
 
