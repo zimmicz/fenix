@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Public repo. Never commit personal data (logs, location, tariff, credentials). Data and the hourly workflow live in each user's private repo, which runs `GOPROXY=direct go run github.com/zimmicz/fenix@main ...`. Plan: `PLAN.md` in the private repo `zimmicz/heating-automation`.
+Public repo. Never commit personal data (logs, location, tariff, credentials). Data and the hourly workflow live in each user's private repo, which runs `GOPROXY=direct go run github.com/zimmicz/fenix@main ...`. Plan: `~/dev/heating-automation/PLAN.md` (local, gitignored).
 
 ## Commands
 
