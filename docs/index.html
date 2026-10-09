@@ -868,9 +868,12 @@ function usageView () {
   })
   const max = Math.max(...days.map(x => daySum(x.day)), 0.1)
   const soFar = Object.values(cur).reduce((a, d) => a + daySum(d), 0)
-  const elapsed = Math.max(0, ...Object.keys(cur).filter(k => daySum(cur[k]) > 0).map(Number))
+  const now = new Date()
+  const isNow = now.getMonth() + 1 === curMonth && now.getFullYear() === curYear
+  const done = Object.keys(cur).map(Number).filter(k => !(isNow && k >= now.getDate()))
+  const elapsed = Math.max(0, ...done.filter(k => daySum(cur[k]) > 0))
   const inMonth = new Date(curYear, curMonth, 0).getDate()
-  const projected = elapsed ? soFar / elapsed * inMonth : 0
+  const projected = elapsed ? done.reduce((a, k) => a + daySum(cur[k]), 0) / elapsed * inMonth : 0
   const lastTotal = Object.values(last).reduce((a, d) => a + daySum(d), 0)
   const roomMonth = nums.map(k => [k, Object.values(cur).reduce((a, d) => a + (dayRooms(d).find(([n]) => n === k)?.[1] || 0), 0)]).sort((a, b) => b[1] - a[1])
   const monthName = (m, y) => new Date(y, m - 1, 1).toLocaleDateString(locale(), { month: 'long' })
@@ -879,11 +882,11 @@ function usageView () {
   return [
     header(t('usage'), `${title(monthName(curMonth, curYear))} · ${kwh(soFar)}${money(soFar)}`, true),
     h('div', { class: 'group' }, h('div', { class: 'ubars', style: 'gap:3px' }, days.map(({ d, day }) => h('div', { class: 'ucol' },
-      h('small', {}, day ? Math.round(daySum(day)) : '–'),
+      h('small', {}, day ? (daySum(day) < 10 ? num1(daySum(day)) : Math.round(daySum(day))) : '–'),
       h('div', { class: 'ubar' }, dayRooms(day).map(([k, v]) => v ? h('i', { style: `height:${v / max * 100}%;background:${color(k)}` }) : null)),
       h('b', {}, String(d.getDate())))))),
     h('div', { class: 'group', style: 'margin-top:16px' },
-      row(t('monthSoFar'), soFar, elapsed ? t('nDays', elapsed) : null),
+      row(t('monthSoFar'), soFar, t('nDays', isNow ? now.getDate() : inMonth)),
       projected ? row(t('monthProjected'), projected, t('atThisPace')) : null,
       lastTotal ? row(title(monthName(Number(u.last_month), Number(u.last_year))), lastTotal) : null),
     price ? null : h('div', { class: 'group', style: 'margin-top:16px' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, t('setPrice'))),
