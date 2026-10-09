@@ -75,6 +75,7 @@ type SunState struct {
 type State struct {
 	Fired   map[string][]string  `json:"fired"`
 	HeadsUp string               `json:"heads_up,omitempty"`
+	LastRun string               `json:"last_run"`
 	Sun     map[string]*SunState `json:"sun"`
 }
 
@@ -427,6 +428,7 @@ func forecast(c *Client, configPath, statePath string) error {
 	}
 	ntfy := env("NTFY_URL", "https://ntfy.sh")
 	stepErr := step(c, cfg, &st, fc, func(msg string) error { return notify(ntfy, cfg.NtfyTopic, msg) })
+	st.LastRun = time.Now().UTC().Format(time.RFC3339)
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "  ")

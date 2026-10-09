@@ -14,6 +14,7 @@ Replacement for the Fenix V24 WiFi floor heating app, plus weather-forecast noti
 5. Open the web app → Settings: enter your Fenix login, the repo (`you/repo`) and the token, tap *Load config*.
 6. Add each room's windows, *Save*.
 7. Install the ntfy app, subscribe to the topic shown in Settings, tap *Send test*.
+8. Optional, recommended: alert when the hourly job stops. At [healthchecks.io](https://healthchecks.io) (free) create a check with period 1 hour, grace 1 hour; under Integrations add *ntfy* with your topic and server `https://ntfy.sh`. Copy the check's ping URL into a repo secret `HC_PING_URL`. Every run pings it; a failed run pings `/fail`; no ping for 2 hours sends you an alert.
 
 The job runs hourly (about 720 of the 2000 free Actions minutes per month for private repos). Run it once by hand: Actions → heating → Run workflow.
 

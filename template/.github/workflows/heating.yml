@@ -19,6 +19,7 @@ jobs:
       GOPROXY: direct
       FENIX_EMAIL: ${{ secrets.FENIX_EMAIL }}
       FENIX_PASSWORD: ${{ secrets.FENIX_PASSWORD }}
+      HC_PING_URL: ${{ secrets.HC_PING_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -37,3 +38,7 @@ jobs:
           git commit -m "log $(date -u +%FT%TZ)"
           git pull --rebase
           git push
+      - if: ${{ success() && env.HC_PING_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 "$HC_PING_URL" > /dev/null
+      - if: ${{ failure() && env.HC_PING_URL != '' }}
+        run: curl -fsS -m 10 --retry 3 "$HC_PING_URL/fail" > /dev/null
