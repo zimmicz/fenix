@@ -26,6 +26,13 @@ type Config struct {
 	Sun        SunConfig       `json:"sun"`
 	Rooms      map[string]Room `json:"rooms"`
 	Rules      []Rule          `json:"rules"`
+	Away       *Away           `json:"away,omitempty"`
+	AwayWarmup *int            `json:"away_warmup_hours,omitempty"`
+}
+
+type Away struct {
+	Until string                       `json:"until"`
+	Prev  map[string]map[string]string `json:"prev"`
 }
 
 type SunConfig struct {
@@ -63,6 +70,7 @@ type Day struct {
 type Forecast struct {
 	Days []Day
 	Now  string
+	At   time.Time
 	GTI  map[float64]map[string]float64
 }
 
@@ -78,6 +86,7 @@ type State struct {
 	HeadsUp string               `json:"heads_up,omitempty"`
 	LastRun string               `json:"last_run"`
 	Sun     map[string]*SunState `json:"sun"`
+	Away    string               `json:"away_restored,omitempty"`
 }
 
 type Span struct{ Start, SunStart, SunEnd int }
@@ -105,6 +114,7 @@ var messages = map[string]map[string]string{
 		"tmax":        "max",
 		"tmin":        "min",
 		"sunshine":    "sunshine",
+		"welcome":     "Heating restored, welcome home",
 	},
 	"cs": {
 		"title":       "Topení",
@@ -124,6 +134,7 @@ var messages = map[string]map[string]string{
 		"tmax":        "max.",
 		"tmin":        "min.",
 		"sunshine":    "slunce",
+		"welcome":     "Topení je zpátky v normálu, vítej doma",
 	},
 }
 
@@ -297,6 +308,16 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 		st.Sun = map[string]*SunState{}
 	}
 
+	away := cfg.Away != nil && st.Away != cfg.Away.Until
+	if away {
+		if back, err := backHome(c, cfg, st, sc, fc.At); err != nil {
+			errs = append(errs, err)
+		} else if back {
+			away = false
+			errs = append(errs, send(T("welcome")))
+		}
+	}
+
 	var labels []string
 	for l := range st.Sun {
 		labels = append(labels, l)
@@ -305,6 +326,9 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 		if r.Sun && len(r.Windows) > 0 && st.Sun[l] == nil {
 			labels = append(labels, l)
 		}
+	}
+	if away {
+		labels = nil
 	}
 	sort.Strings(labels)
 
@@ -433,6 +457,38 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 	return errors.Join(errs...)
 }
 
+func backHome(c *Client, cfg Config, st *State, sc SunConfig, now time.Time) (bool, error) {
+	until, err := time.Parse(time.RFC3339, cfg.Away.Until)
+	if err != nil {
+		return false, fmt.Errorf("away: %w", err)
+	}
+	warm := sc.LeadHours
+	if cfg.AwayWarmup != nil {
+		warm = *cfg.AwayWarmup
+	}
+	if now.Before(until.Add(-time.Duration(warm) * time.Hour)) {
+		return false, nil
+	}
+	zones, err := c.Zones()
+	if err != nil {
+		return false, err
+	}
+	var errs []error
+	for _, z := range zones {
+		p := cfg.Away.Prev[z.Label]
+		if p["gv_mode"] == "" || p["gv_mode"] == modes["eco"] || z.Device.str("gv_mode") != modes["eco"] {
+			continue
+		}
+		errs = append(errs, c.Write(z.Device.str("id_device"), p))
+	}
+	if err := errors.Join(errs...); err != nil {
+		return false, err
+	}
+	st.Away = cfg.Away.Until
+	st.Sun = map[string]*SunState{}
+	return true, nil
+}
+
 func readJSON(path string, v any) error {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -471,6 +527,7 @@ func forecast(c *Client, configPath, statePath string) error {
 	if err != nil {
 		return err
 	}
+	fc.At = time.Now()
 	fmt.Println("now", fc.Now)
 	for _, d := range fc.Days {
 		fmt.Printf("%s tmax=%.1f tmin=%.1f sunshine=%.1fh\n", d.Date, d.Metrics["tmax"], d.Metrics["tmin"], d.Metrics["sunshine"])

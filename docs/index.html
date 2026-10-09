@@ -58,7 +58,7 @@ input,select,textarea{font:inherit;color:inherit}
 .row+.row::before{content:"";position:absolute;top:0;left:16px;right:0;border-top:.5px solid var(--sep)}
 .row .label{flex:1;min-width:0}
 .row .value{color:var(--muted);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.row input[type=text],.row input[type=email],.row input[type=password],.row input[type=number],.row select{border:0;background:none;text-align:right;color:var(--muted);flex:1;min-width:0;padding:0;outline:none;-webkit-appearance:none;appearance:none}
+.row input[type=text],.row input[type=datetime-local],.row input[type=email],.row input[type=password],.row input[type=number],.row select{border:0;background:none;text-align:right;color:var(--muted);flex:1;min-width:0;padding:0;outline:none;-webkit-appearance:none;appearance:none}
 .row select{direction:rtl}
 .row .chev{color:var(--muted);opacity:.6;flex:none}.row .chev svg{width:8px;height:14px;display:block}
 .row>.seg{flex:1}
@@ -97,6 +97,7 @@ input,select,textarea{font:inherit;color:inherit}
 .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffc53d,#ff8a00)}
 
 .warn{background:rgba(255,59,48,.12);color:var(--fg);border-radius:16px;padding:12px 16px;margin:-6px 0 14px;font-size:15px;display:flex;flex-direction:column;gap:4px}.warn b{color:var(--red)}
+.away{background:rgba(48,176,122,.14);border-radius:16px;padding:12px 12px 12px 16px;margin:-6px 0 14px;font-size:15px;display:flex;align-items:center;gap:12px}.away>div{flex:1;display:flex;flex-direction:column;gap:2px}.away>div div{color:var(--muted);font-size:13px}.away .btn{min-width:0;padding:10px 14px;flex:none}
 .help{background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.help h3{margin:0 0 6px;font-size:17px}.help p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
 .step{display:flex;gap:12px;background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.step .num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}.step .body{min-width:0}.step h3{margin:3px 0 6px;font-size:17px}.step p{margin:0;color:var(--muted);font-size:15px;line-height:1.45;overflow-wrap:anywhere}.step .link{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;text-decoration:none;font-size:15px}
 .empty{background:var(--card);border-radius:22px;padding:28px 22px;text-align:center;box-shadow:var(--shadow)}
@@ -215,6 +216,9 @@ const TEXT = {
     fenixAccount: 'Fenix account', email: 'Email', password: 'Password', required: 'Required', fenixNote: 'Same login as the official Fenix app. Stored only on this device.', signedIn: 'Signed in',
     repository: 'Repository', token: 'Token', connect: 'Connect', connected: 'Connected', ghSheetNote: 'Your private repository with the hourly workflow. Use the key from step 7 of the setup guide (fine-grained, only that repository, Contents: read and write).',
     latitude: 'Latitude', longitude: 'Longitude', useThese: 'Use these', locNote: 'Leave empty to use the location of your Fenix home.', useMyLocation: 'Use my current location',
+    away: 'Away', backOn: 'Back on', leave: 'Leave', awayUntil: 'Away until {0}', backNow: 'Back now', welcomeBack: 'Welcome back', errPast: 'Pick a time in the future', awayToast: 'Away · rooms on eco',
+    awayNote: 'Rooms on eco, heating comes back {0} h before you return.',
+    awaySheetNote: 'All rooms switch to eco now. The hourly robot switches them back to their usual mode {0} h before you return, so the floors are warm. Rooms you change by hand meanwhile are left alone.',
     weeklyProgram: 'Weekly program', save: 'Save', copyWeekdays: 'Copy to Mon–Fri', copyAll: 'Copy to all days',
     programNote: 'Pick a mode, then tap or drag over hours. Floor heating reacts in hours, so whole hours are enough. Hours split into quarters (striped) keep their quarters until you paint them.',
     nWindows: n => `${n} window${n === 1 ? '' : 's'}`
@@ -256,6 +260,9 @@ const TEXT = {
     fenixAccount: 'Účet Fenix', email: 'E-mail', password: 'Heslo', required: 'Povinné', fenixNote: 'Stejné přihlášení jako v oficiální aplikaci Fenix. Uloží se jen v tomto zařízení.', signedIn: 'Přihlášeno',
     repository: 'Repozitář', token: 'Token', connect: 'Připojit', connected: 'Připojeno', ghSheetNote: 'Tvůj soukromý repozitář s hodinovým workflow. Použij klíč z kroku 7 návodu (fine-grained, jen tento repozitář, Contents: read and write).',
     latitude: 'Zeměpisná šířka', longitude: 'Zeměpisná délka', useThese: 'Použít', locNote: 'Nech prázdné a použije se poloha domácnosti Fenix.', useMyLocation: 'Použít moji aktuální polohu',
+    away: 'Pryč', backOn: 'Návrat', leave: 'Odjíždím', awayUntil: 'Pryč do {0}', backNow: 'Jsem doma', welcomeBack: 'Vítej doma', errPast: 'Vyber čas v budoucnu', awayToast: 'Pryč · místnosti v útlumu',
+    awayNote: 'Místnosti v útlumu, topení naskočí {0} h před návratem.',
+    awaySheetNote: 'Všechny místnosti teď přejdou do útlumu. Hodinový robot je {0} h před návratem vrátí do obvyklého režimu, ať jsou podlahy teplé. Místnosti, které mezitím přepneš ručně, nechá být.',
     weeklyProgram: 'Týdenní program', save: 'Uložit', copyWeekdays: 'Kopírovat na Po–Pá', copyAll: 'Kopírovat na všechny dny',
     programNote: 'Vyber režim a klepni nebo táhni přes hodiny. Podlahové topení reaguje v řádu hodin, takže celé hodiny stačí. Hodiny rozdělené na čtvrthodiny (pruhované) si je nechají, dokud je nepřebarvíš.',
     nWindows: n => `${n} ${n === 1 ? 'okno' : n < 5 ? 'okna' : 'oken'}`
@@ -269,6 +276,7 @@ const HELP = {
     ['Modes', 'Schedule = the room follows its weekly program. Manual, Comfort, Eco and Booster = fixed temperature you set below. Frost = only protects from freezing. Off = no heating. Schedule restores the program the room had before. Weekly program (in the room) edits the schedule hour by hour.'],
     ['Sun control', 'Floor heating reacts slowly, so on a sunny day it keeps pumping heat while the sun is already warming the room through the windows. Tell the app where each room\'s windows face and how big they are. Every hour the robot checks the forecast and works out when the sun will really heat each room.'],
     ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If the forecast loses the sun earlier, it switches back at the next hourly check. If you change the room by hand, the robot leaves it alone that day. Rooms already on manual, eco, frost, off or booster are not touched.'],
+    ['Away', 'Leaving for a few days? Home → Away, pick when you are back, tap Leave. Every room goes to eco right away. The hourly robot switches each room back to its usual mode 3 h before you return (same as "Start eco earlier"), so the floors are warm, and sends a notification. Back early? Tap Back now. Sun control pauses while you are away. Needs GitHub connected.'],
     ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
     ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
     ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Then check your cron-job.org job and the Actions tab of your repository. Nothing gets damaged: eco only means a cooler room.']
@@ -279,6 +287,7 @@ const HELP = {
     ['Režimy', 'Program = místnost jede podle týdenního programu. Manuál, Komfort, Útlum a Booster = pevná teplota, kterou nastavíš níž. Nezámrz = jen ochrana proti zamrznutí. Vypnuto = netopí. Program vrátí místnost do programu, který měla předtím. Týdenní program (v místnosti) upravíš po hodinách.'],
     ['Řízení podle slunce', 'Podlahové topení reaguje pomalu, takže za slunečného dne dál topí, i když místnost už ohřívá slunce okny. Řekni aplikaci, kam okna v každé místnosti míří a jak jsou velká. Robot každou hodinu projde předpověď a spočítá, kdy slunce každou místnost opravdu ohřeje.'],
     ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když předpověď slunce ztratí dřív, vrátí ji při nejbližší hodinové kontrole. Když místnost přepneš ručně, robot ji ten den nechá být. Místnosti, které už jsou v manuálu, útlumu, nezámrzu, vypnuté nebo v boosteru, nechává být.'],
+    ['Pryč', 'Odjíždíš na pár dní? Domů → Pryč, vyber, kdy se vrátíš, a klepni na Odjíždím. Všechny místnosti hned přejdou do útlumu. Hodinový robot každou místnost 3 h před návratem (stejně jako „Útlum dřív o“) vrátí do obvyklého režimu, ať jsou podlahy teplé, a pošle notifikaci. Vrátíš se dřív? Klepni na Jsem doma. Řízení podle slunce mezitím stojí. Potřebuje připojený GitHub.'],
     ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
     ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
     ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Pak zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři. Nic se nepokazí: útlum znamená jen chladnější místnost.']
@@ -395,15 +404,19 @@ async function loadZones () {
 const zoneMode = z => MODES.find(m => m.code === String(z.d.gv_mode)) || MODES[0]
 const scheduleCode = z => (store.get().schedule || {})[z.label] || '11'
 
-async function write (label, params, field, want, statusText) {
+function push (label, params) {
   const z = S.zones.find(z => z.label === label)
   const form = { smarthome_id: S.home.id, context: '1', peremption: '15000', 'query[id_device]': z.d.id_device }
   for (const [k, v] of Object.entries(params)) form[`query[${k}]`] = v
+  return api('human/query/push/', form, [8])
+}
+
+async function write (label, params, field, want, statusText) {
   S.busy[label] = (S.busy[label] || 0) + 1
   S.status[label] = statusText
   render()
   try {
-    await api('human/query/push/', form, [8])
+    await push(label, params)
     S.status[label] = t('waitingUnit')
     render()
     for (let i = 0; i < 12; i++) {
@@ -470,6 +483,7 @@ async function loadConfig () {
   S.config.rules = S.config.rules.filter(r => METRICS[r.metric])
   S.configSha = sha
   S.state = (await ghRead('data/state.json')).data
+  if (S.config.away && S.state?.away_restored === S.config.away.until) delete S.config.away
   if (S.config.lang !== lang()) { setDirty(true); return }
   setDirty(false)
 }
@@ -485,6 +499,30 @@ async function saveConfig () {
   setDirty(false)
   toast(t('savedToast'))
   await act(loadForecast)()
+}
+
+const awayOn = () => S.config?.away && S.state?.away_restored !== S.config.away.until
+const warmup = () => S.config?.away_warmup_hours ?? sunCfg().lead_hours
+
+async function leave (until) {
+  const prev = {}
+  for (const z of S.zones) {
+    const s = S.state?.sun?.[z.label]
+    prev[z.label] = s?.applied && !s.done && s.prev ? s.prev : { gv_mode: String(z.d.gv_mode), nv_mode: String(z.d.nv_mode ?? z.d.gv_mode) }
+  }
+  S.config.away = { until, prev }
+  await saveConfig()
+  await Promise.all(S.zones.filter(z => !['3', '2', '1'].includes(String(z.d.gv_mode))).map(z => push(z.label, { gv_mode: '3', nv_mode: '3' })))
+  await loadZones()
+}
+
+async function backNow () {
+  const prev = S.config.away.prev
+  await Promise.all(S.zones.filter(z => String(z.d.gv_mode) === '3' && prev[z.label] && prev[z.label].gv_mode !== '3').map(z => push(z.label, prev[z.label])))
+  delete S.config.away
+  await saveConfig()
+  await loadZones()
+  toast(t('welcomeBack'))
 }
 
 function setDirty (v) {
@@ -595,8 +633,31 @@ function zonesView () {
   return [
     header(t('appName'), sub, true),
     checkCard(),
-    h('div', { class: 'tiles' }, zones ? zones.map(zoneTile) : [1, 2, 3, 4].map(() => h('div', { class: 'skel' })))
+    awayOn() ? awayBanner() : null,
+    h('div', { class: 'tiles' }, zones ? zones.map(zoneTile) : [1, 2, 3, 4].map(() => h('div', { class: 'skel' }))),
+    S.config && zones && !awayOn() ? h('div', { class: 'group', style: 'margin-top:20px' }, navRow(t('away'), null, () => openSheet({ type: 'away' }))) : null
   ]
+}
+
+function awayBanner () {
+  const until = new Date(S.config.away.until).toLocaleString(locale(), { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return h('div', { class: 'away' },
+    h('div', {}, h('b', {}, t('awayUntil', until)), h('div', {}, t('awayNote', warmup()))),
+    h('button', { class: 'btn secondary', onclick: e => { e.target.disabled = true; act(backNow)().finally(render) } }, t('backNow')))
+}
+
+function awaySheet () {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  d.setHours(18, 0, 0, 0)
+  const local = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16)
+  return formSheet(t('away'), [['until', t('backOn'), 'datetime-local', '', local]], t('leave'), async v => {
+    const until = new Date(v.until)
+    if (!(until > new Date())) throw new Error(t('errPast'))
+    await leave(until.toISOString())
+    closeSheet()
+    toast(t('awayToast'))
+  }, h('div', { class: 'note' }, t('awaySheetNote', warmup())))
 }
 
 function checkCard () {
@@ -1010,6 +1071,7 @@ function sheetContent () {
   if (sh.type === 'room') return roomSheet(sh.label)
   if (sh.type === 'help') return helpSheet()
   if (sh.type === 'setup') return setupSheet()
+  if (sh.type === 'away') return awaySheet()
   if (sh.type === 'login') {
     return formSheet(t('fenixAccount'), [['email', t('email'), 'email', 'you@example.com', s.email], ['password', t('password'), 'password', t('required'), s.password]], t('signIn'), async v => {
       store.set(v)
