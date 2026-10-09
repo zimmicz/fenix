@@ -188,8 +188,11 @@ const ICONS = {
 const TEXT = {
   en: {
     appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
-    usage: 'Usage', last7: 'Last 7 days', prev7: 'Previous 7 days', byRoom: 'By room, last 7 days', connectGhForUsage: 'Connect GitHub to see usage',
-    usageNote: 'Estimated from hourly snapshots: heating on or off × heater power. Use it to compare rooms and days, not as a meter reading.',
+    usage: 'Usage', monthSoFar: 'This month so far', monthProjected: 'This month, projected', atThisPace: 'at the current pace', setPrice: 'Set your price per kWh to see costs',
+    byRoomMonth: 'By room, this month', yearToDate: 'This year so far', lastYear: 'Last year', lastYearNote: 'at your current price',
+    usageNote: 'From the Fenix unit\'s own statistics, the same as in the official app. Costs use your price per kWh from Settings.',
+    electricity: 'Electricity', pricePerKwh: 'Price per kWh', priceNote: 'All-in price including distribution and VAT. Stored only on this device.',
+    nDays: n => `${n} day${n === 1 ? '' : 's'}`,
     done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
     m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Booster', m_off: 'Off', m_manual: 'Manual',
     met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
@@ -234,8 +237,11 @@ const TEXT = {
   },
   cs: {
     appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
-    usage: 'Spotřeba', last7: 'Posledních 7 dní', prev7: 'Předchozích 7 dní', byRoom: 'Podle místností, posledních 7 dní', connectGhForUsage: 'Připoj GitHub, ať vidíš spotřebu',
-    usageNote: 'Odhad z hodinových snímků: topí, nebo netopí × výkon topení. Ber to jako srovnání místností a dní, ne jako odečet z elektroměru.',
+    usage: 'Spotřeba', monthSoFar: 'Tento měsíc zatím', monthProjected: 'Tento měsíc, odhad', atThisPace: 'při současném tempu', setPrice: 'Zadej cenu za kWh a uvidíš náklady',
+    byRoomMonth: 'Podle místností, tento měsíc', yearToDate: 'Letos zatím', lastYear: 'Loni', lastYearNote: 'za tvou současnou cenu',
+    usageNote: 'Čísla jsou ze statistik jednotky Fenix, stejné jako v oficiální aplikaci. Náklady počítá s cenou za kWh z Nastavení.',
+    electricity: 'Elektřina', pricePerKwh: 'Cena za kWh', priceNote: 'Celková cena včetně distribuce a DPH. Uloží se jen v tomto zařízení.',
+    nDays: n => `${n} ${n === 1 ? 'den' : n < 5 ? 'dny' : 'dní'}`,
     done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
     m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Booster', m_off: 'Vypnuto', m_manual: 'Manuál',
     met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
@@ -290,7 +296,7 @@ const HELP = {
     ['Away', 'Leaving for a few days? Home → Away, pick when you are back, tap Leave. Every room goes to eco right away. The hourly robot switches each room back to its usual mode 3 h before you return (same as "Start eco earlier"), so the floors are warm, and sends a notification. Back early? Tap Back now. Sun control pauses while you are away. Needs GitHub connected.'],
     ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
     ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
-    ['Usage', 'Estimated kWh per room and day from the hourly log, with the average outdoor temperature under each day. The rooms at the top of the list are where a tighter weekly program saves the most.'],
+    ['Usage', 'kWh per room and day straight from the Fenix unit\'s statistics, the same numbers as the official app. Enter your price per kWh in Settings to see costs and a projection for this month. The rooms at the top of the list are where a tighter weekly program saves the most.'],
     ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Then check your cron-job.org job and the Actions tab of your repository. Nothing gets damaged: eco only means a cooler room.']
   ],
   cs: [
@@ -302,7 +308,7 @@ const HELP = {
     ['Pryč', 'Odjíždíš na pár dní? Domů → Pryč, vyber, kdy se vrátíš, a klepni na Odjíždím. Všechny místnosti hned přejdou do útlumu. Hodinový robot každou místnost 3 h před návratem (stejně jako „Útlum dřív o“) vrátí do obvyklého režimu, ať jsou podlahy teplé, a pošle notifikaci. Vrátíš se dřív? Klepni na Jsem doma. Řízení podle slunce mezitím stojí. Potřebuje připojený GitHub.'],
     ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
     ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
-    ['Spotřeba', 'Odhad kWh podle místností a dní z hodinového záznamu, pod každým dnem průměrná venkovní teplota. Místnosti nahoře v seznamu jsou ty, kde přísnější týdenní program ušetří nejvíc.'],
+    ['Spotřeba', 'kWh podle místností a dní přímo ze statistik jednotky Fenix, stejná čísla jako v oficiální aplikaci. Zadej v Nastavení cenu za kWh a uvidíš náklady a odhad na tento měsíc. Místnosti nahoře v seznamu jsou ty, kde přísnější týdenní program ušetří nejvíc.'],
     ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Pak zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři. Nic se nepokazí: útlum znamená jen chladnější místnost.']
   ]
 }
@@ -489,33 +495,9 @@ async function ghRead (path) {
   return { data: JSON.parse(b64decode(j.content)), sha: j.sha }
 }
 
-async function ghRaw (path) {
-  const r = await gh(path, { headers: { Accept: 'application/vnd.github.raw' } })
-  if (r.status === 404) return ''
-  if (r.status === 401) throw new Error(t('errGhToken'))
-  if (!r.ok) throw new Error(t('errGh', r.status))
-  return r.text()
-}
-
-const localDate = d => d.toLocaleDateString('sv-SE')
-const usageDays = csv => {
-  const byZone = {}
-  for (const r of csv.trim().split('\n').slice(1).map(l => l.split(','))) if (r.length >= 9) (byZone[r[1]] ||= []).push(r)
-  const days = {}
-  for (const [zone, rows] of Object.entries(byZone)) {
-    rows.forEach((r, i) => {
-      const ts = new Date(r[0])
-      const hours = rows[i + 1] ? Math.min((new Date(rows[i + 1][0]) - ts) / 36e5, 2) : 1
-      const d = days[localDate(ts)] ||= { rooms: {}, out: {} }
-      d.rooms[zone] = (d.rooms[zone] || 0) + Number(r[6]) * Number(r[7]) / 1000 * hours
-      if (r[8] !== '') d.out[r[0]] = Number(r[8])
-    })
-  }
-  return days
-}
-
 async function loadUsage () {
-  S.usage = usageDays(await ghRaw('data/log.csv'))
+  if (!S.zones) await loadZones()
+  S.usage = await api('human/stats/read/', { smarthome_id: S.home.id })
 }
 
 async function loadConfig () {
@@ -629,7 +611,7 @@ async function refresh () {
     await Promise.all([
       s.email && act(loadZones)(),
       s.repo && s.ghToken && act(loadConfig)(),
-      S.tab === 'usage' && s.repo && s.ghToken && act(loadUsage)()
+      S.tab === 'usage' && s.email && act(loadUsage)()
     ])
     if (s.email || S.config) await act(loadForecast)()
   } finally {
@@ -861,42 +843,67 @@ function forecastView () {
 const ROOM_COLORS = ['#ff6b1a', '#2f8cff', '#30b07a', '#8e5cf7', '#f5bd1f', '#ff3b30', '#00a3a3', '#8e8e93']
 const kwh = v => `${num1(v)} kWh`
 
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+const dayRooms = day => Object.entries(day || {}).filter(([k]) => k !== 'all').map(([k, v]) => [k, Number(v?.conso_day) || 0])
+const daySum = day => dayRooms(day).reduce((a, [, v]) => a + v, 0)
+
 function usageView () {
-  const s = store.get()
-  if (!s.repo || !s.ghToken) return [header(t('usage')), h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, t('connectGhForUsage')))]
+  if (!store.get().email) return [header(t('usage')), h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'login' }) }, t('signIn')))]
   if (!S.usage) {
     if (!S.usageTried) { S.usageTried = true; act(loadUsage)().then(render) }
     return [header(t('usage'), t('loading'), true), h('div', { class: 'skel' })]
   }
-  const dates = n => Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - n - 6 + i); return localDate(d) })
-  const sum = obj => Object.values(obj || {}).reduce((a, b) => a + b, 0)
-  const week = dates(0)
-  const prev = dates(7)
-  const total = week.reduce((a, d) => a + sum(S.usage[d]?.rooms), 0)
-  const prevTotal = prev.reduce((a, d) => a + sum(S.usage[d]?.rooms), 0)
-  const hasPrev = prev.some(d => S.usage[d])
-  const rooms = [...new Set(Object.values(S.usage).flatMap(d => Object.keys(d.rooms)))].sort()
-  const color = r => ROOM_COLORS[rooms.indexOf(r) % ROOM_COLORS.length]
-  const roomTotals = rooms.map(r => [r, week.reduce((a, d) => a + (S.usage[d]?.rooms[r] || 0), 0)]).sort((a, b) => b[1] - a[1])
-  const max = Math.max(...week.map(d => sum(S.usage[d]?.rooms)), 0.1)
+  const u = S.usage
+  const price = Number(store.get().price) || 0
+  const cost = v => `${Math.round(v * price).toLocaleString(locale())} Kč`
+  const money = v => price ? ` · ${cost(v)}` : ''
+  const cur = u.stats_by_day?.statsByDayCurrentMonth || {}
+  const last = u.stats_by_day?.statsByDayLastMonth || {}
+  const curMonth = Number(u.current_month); const curYear = Number(u.current_year)
+  const zoneName = num => title(S.zones?.find(z => String(z.d.num_zone) === String(num))?.label || String(num))
+  const nums = [...new Set([cur, last].flatMap(m => Object.values(m).flatMap(d => dayRooms(d).map(([k]) => k))))].sort((a, b) => a - b)
+  const color = k => ROOM_COLORS[nums.indexOf(k) % ROOM_COLORS.length]
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - 13 + i)
+    return { d, day: (d.getMonth() + 1 === curMonth ? cur : last)[d.getDate()] }
+  })
+  const max = Math.max(...days.map(x => daySum(x.day)), 0.1)
+  const soFar = Object.values(cur).reduce((a, d) => a + daySum(d), 0)
+  const elapsed = Math.max(0, ...Object.keys(cur).filter(k => daySum(cur[k]) > 0).map(Number))
+  const inMonth = new Date(curYear, curMonth, 0).getDate()
+  const projected = elapsed ? soFar / elapsed * inMonth : 0
+  const lastTotal = Object.values(last).reduce((a, d) => a + daySum(d), 0)
+  const roomMonth = nums.map(k => [k, Object.values(cur).reduce((a, d) => a + (dayRooms(d).find(([n]) => n === k)?.[1] || 0), 0)]).sort((a, b) => b[1] - a[1])
+  const devs = Object.values(u.devices || {})
+  const months = MONTHS.map(m => devs.reduce((a, d) => a + (Number(d.monthly_conso?.[m]) || 0), 0))
+  const ytd = months.slice(0, curMonth).reduce((a, b) => a + b, 0)
+  const lastYear = devs.reduce((a, d) => a + (Number(d.last_year_conso) || 0), 0)
+  const mmax = Math.max(...months, 0.1)
+  const monthName = (m, y) => new Date(y, m - 1, 1).toLocaleDateString(locale(), { month: 'long' })
+  const row = (label, v, small) => h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, label), small ? h('small', {}, small) : null),
+    h('div', { class: 'two', style: 'flex:none;text-align:right' }, h('span', {}, kwh(v)), price ? h('small', {}, cost(v)) : null))
   return [
-    header(t('usage'), `${t('last7')} · ${kwh(total)}`, true),
-    h('div', { class: 'group' }, h('div', { class: 'ubars' }, week.map(d => {
-      const day = S.usage[d]
-      const temps = Object.values(day?.out || {})
-      return h('div', { class: 'ucol' },
-        h('small', {}, day ? num1(sum(day.rooms)) : '–'),
-        h('div', { class: 'ubar' }, rooms.map(r => day?.rooms[r] ? h('i', { style: `height:${day.rooms[r] / max * 100}%;background:${color(r)}` }) : null)),
-        h('b', {}, new Date(d + 'T12:00').toLocaleDateString(locale(), { weekday: 'short' })),
-        h('small', {}, temps.length ? `${Math.round(temps.reduce((a, b) => a + b, 0) / temps.length)}°` : ''))
-    }))),
-    h('div', { class: 'section' }, t('byRoom')),
-    h('div', { class: 'group' }, roomTotals.map(([r, v]) => h('div', { class: 'row' },
-      h('span', { class: 'dot', style: `background:${color(r)}` }), h('span', { class: 'label' }, title(r)),
-      h('span', { class: 'value' }, `${kwh(v)} · ${total ? Math.round(v / total * 100) : 0} %`)))),
-    hasPrev ? h('div', { class: 'group', style: 'margin-top:16px' },
-      h('div', { class: 'row' }, h('span', { class: 'label' }, t('last7')), h('span', { class: 'value' }, kwh(total))),
-      h('div', { class: 'row' }, h('span', { class: 'label' }, t('prev7')), h('span', { class: 'value' }, `${kwh(prevTotal)}${prevTotal ? ` · ${total >= prevTotal ? '+' : '−'}${Math.abs(Math.round((total - prevTotal) / prevTotal * 100))} %` : ''}`))) : null,
+    header(t('usage'), `${title(monthName(curMonth, curYear))} · ${kwh(soFar)}${money(soFar)}`, true),
+    h('div', { class: 'group' }, h('div', { class: 'ubars', style: 'gap:3px' }, days.map(({ d, day }) => h('div', { class: 'ucol' },
+      h('small', {}, day ? Math.round(daySum(day)) : '–'),
+      h('div', { class: 'ubar' }, dayRooms(day).map(([k, v]) => v ? h('i', { style: `height:${v / max * 100}%;background:${color(k)}` }) : null)),
+      h('b', {}, String(d.getDate())))))),
+    h('div', { class: 'group', style: 'margin-top:16px' },
+      row(t('monthSoFar'), soFar, elapsed ? t('nDays', elapsed) : null),
+      projected ? row(t('monthProjected'), projected, t('atThisPace')) : null,
+      lastTotal ? row(title(monthName(Number(u.last_month), Number(u.last_year))), lastTotal) : null),
+    price ? null : h('div', { class: 'group', style: 'margin-top:16px' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, t('setPrice'))),
+    h('div', { class: 'section' }, t('byRoomMonth')),
+    h('div', { class: 'group' }, roomMonth.map(([k, v]) => h('div', { class: 'row' },
+      h('span', { class: 'dot', style: `background:${color(k)}` }), h('span', { class: 'label' }, zoneName(k)),
+      h('span', { class: 'value' }, `${kwh(v)}${money(v)} · ${soFar ? Math.round(v / soFar * 100) : 0} %`)))),
+    h('div', { class: 'section' }, String(curYear)),
+    h('div', { class: 'group' },
+      h('div', { class: 'ubars', style: 'gap:3px' }, months.map((v, i) => h('div', { class: 'ucol' },
+        h('div', { class: 'ubar' }, v ?h('i', { style: `height:${v / mmax * 100}%;background:var(--accent)` }) : null),
+        h('b', {}, new Date(curYear, i, 1).toLocaleDateString(locale(), { month: 'narrow' }))))),
+      row(t('yearToDate'), ytd),
+      lastYear ? row(t('lastYear'), lastYear, t('lastYearNote')) : null),
     h('div', { class: 'note' }, t('usageNote'))
   ]
 }
@@ -936,6 +943,12 @@ function settingsView () {
       navRow('Fenix', s.email || t('notSignedIn'), () => openSheet({ type: 'login' })),
       navRow('GitHub', s.repo || t('notConnected'), () => openSheet({ type: 'github' }))),
     h('div', { class: 'note' }, t('ghNote')),
+    h('div', { class: 'section' }, t('electricity')),
+    h('div', { class: 'group' },
+      h('label', { class: 'row' }, h('span', { class: 'label', style: 'flex:none' }, t('pricePerKwh')),
+        h('input', { type: 'number', inputMode: 'decimal', step: '0.01', min: '0', placeholder: '0', value: s.price ?? '', oninput: e => store.set({ price: Number(e.target.value.replace(',', '.')) || null }) }),
+        h('span', { class: 'value', style: 'flex:none' }, 'Kč'))),
+    h('div', { class: 'note' }, t('priceNote')),
     c ? [
       h('div', { class: 'section' }, t('roomsWindows')),
       h('div', { class: 'group' },
