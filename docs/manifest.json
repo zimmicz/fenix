@@ -1,0 +1,9 @@
+{
+  "name": "Heating",
+  "short_name": "Heating",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f6",
+  "theme_color": "#d9480f",
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
+}

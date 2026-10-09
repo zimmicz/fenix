@@ -116,7 +116,7 @@ func setMode(c *Client, zone, mode string) error {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: status | log | set ZONE KIND CELSIUS | mode ZONE MODE")
+		return fmt.Errorf("usage: status | log | forecast | set ZONE KIND CELSIUS | mode ZONE MODE")
 	}
 	c, err := connect()
 	if err != nil {
@@ -127,6 +127,8 @@ func run(args []string) error {
 		return status(c)
 	case args[0] == "log":
 		return logZones(c, env("LOG_FILE", "data/log.csv"))
+	case args[0] == "forecast":
+		return forecast(c, env("CONFIG_FILE", "config.json"), env("STATE_FILE", "data/state.json"))
 	case args[0] == "set" && len(args) == 4:
 		celsius, err := strconv.ParseFloat(args[3], 64)
 		if err != nil {

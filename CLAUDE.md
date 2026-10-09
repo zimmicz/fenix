@@ -10,7 +10,10 @@ FENIX_EMAIL=... FENIX_PASSWORD=... go run . status
 go run . set ZONE comfort|eco|frost|boost|manual CELSIUS   # polls 60s for readback
 go run . mode ZONE comfort|off|frost|eco|boost|program
 go run . log                                    # appends rows to data/log.csv (LOG_FILE overrides)
+go run . forecast                               # rules from config.json, state in data/state.json, ntfy push
 ```
+
+Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, no deps. Talks to Fenix, Open-Meteo, ntfy and the GitHub contents API (user's private repo `config.json`) straight from the browser. Template workflow for users: `template/.github/workflows/heating.yml`.
 
 ## Architecture
 
@@ -21,4 +24,6 @@ go run . log                                    # appends rows to data/log.csv (
 - Temperatures are tenths of °F: `C = (raw - 320) / 18`. Setpoint limits come from each device's `min_set_point`/`max_set_point` (410..986 raw, 5..37 °C).
 - Writes take effect with delay (cloud to unit); a readback right after a write can show the old value.
 - Never rewrite the `programme` schedule strings; drive setpoints and modes only.
+- Zones usually run raw `gv_mode` values outside the named map (8, 16 seen: unit schedules). Auto-adjust reverts restore the recorded raw `gv_mode`/`nv_mode`, never a mode name.
+- Forecast dates come from Open-Meteo `timezone=auto`, so "today" is the home's local date; state compares dates as `YYYY-MM-DD` strings.
 - Breaking a command's CLI breaks every user's hourly workflow (they track `@main`).

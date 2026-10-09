@@ -3,15 +3,16 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 )
 
 const homeJSON = `{"code":{"code":"8","key":"ok","value":"ok"},"data":{"zones":[
-{"zone_label":"OBYVAK","devices":[{"id_device":"C001-000","temperature_air":"751","consigne_confort":"717","consigne_eco":"536","gv_mode":"16","heating_up":"0","puissance_app":"3400","fan_speed":0,"on_off":null}]},
+{"zone_label":"OBYVAK","devices":[{"id_device":"C001-000","temperature_air":"751","consigne_confort":"717","consigne_eco":"536","gv_mode":"16","nv_mode":"16","heating_up":"0","puissance_app":"3400","fan_speed":0,"on_off":null}]},
 {"zone_label":"EMPTY","devices":[]}]}}`
 
-func TestClient(t *testing.T) {
-	var pushed map[string][]string
+func fakeFenix(t *testing.T) (*Client, *[]url.Values) {
+	var pushed []url.Values
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -33,16 +34,20 @@ func TestClient(t *testing.T) {
 	})
 	mux.HandleFunc("/api/v0.1/human/query/push/", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
-		pushed = r.Form
+		pushed = append(pushed, r.Form)
 		w.Write([]byte(`{"code":{"code":"8","key":"ok","value":"ok"},"data":{}}`))
 	})
 	srv := httptest.NewServer(mux)
-	defer srv.Close()
-
+	t.Cleanup(srv.Close)
 	c := &Client{http: srv.Client(), tokenURL: srv.URL + "/token", apiBase: srv.URL + "/api/v0.1/"}
 	if err := c.Login("a@b.c", "pw"); err != nil {
 		t.Fatal(err)
 	}
+	return c, &pushed
+}
+
+func TestClient(t *testing.T) {
+	c, pushed := fakeFenix(t)
 	if c.HomeID != "H1" || c.Lat != "49.2" {
 		t.Fatalf("home not parsed: %+v", c)
 	}
@@ -62,8 +67,9 @@ func TestClient(t *testing.T) {
 	if err := c.Write("C001-000", map[string]string{"consigne_confort": "707"}); err != nil {
 		t.Fatal(err)
 	}
-	if pushed["query[id_device]"][0] != "C001-000" || pushed["query[consigne_confort]"][0] != "707" || pushed["smarthome_id"][0] != "H1" {
-		t.Fatalf("push form: %v", pushed)
+	p := (*pushed)[0]
+	if p.Get("query[id_device]") != "C001-000" || p.Get("query[consigne_confort]") != "707" || p.Get("smarthome_id") != "H1" {
+		t.Fatalf("push form: %v", p)
 	}
 
 	rows := logRows(zones, "T", "5.0")

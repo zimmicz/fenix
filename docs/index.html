@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Heating">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<title>Heating</title>
+<style>
+:root{--bg:#f4f4f6;--card:#fff;--fg:#1c1c1e;--muted:#6e6e73;--line:#e2e2e6;--accent:#d9480f;--ok:#2b8a3e;--bad:#c92a2a;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#1c1c1e;--fg:#f2f2f7;--muted:#98989f;--line:#2c2c2e;--accent:#ff8a3d;--ok:#51cf66;--bad:#ff6b6b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--fg:#f2f2f7;--muted:#98989f;--line:#2c2c2e;--accent:#ff8a3d;--ok:#51cf66;--bad:#ff6b6b;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 -apple-system,system-ui,sans-serif;padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
+main{max-width:640px;margin:0 auto;padding:12px 16px}
+h1{font-size:28px;margin:8px 0 12px;display:flex;justify-content:space-between;align-items:center}
+h2{font-size:15px;text-transform:uppercase;color:var(--muted);font-weight:600;margin:20px 0 8px}
+.card{background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.zone .temp{font-size:28px;font-weight:600}
+.muted{color:var(--muted);font-size:14px}
+.flame{color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+button{font:inherit;border:0;border-radius:8px;padding:8px 12px;background:var(--line);color:var(--fg);cursor:pointer}
+button.on,button.primary{background:var(--accent);color:#fff}
+button:disabled{opacity:.5}
+input,select{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);min-width:0}
+label{display:block;margin:8px 0}
+label>input,label>select{display:block;width:100%;margin-top:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rule{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.rule .grid select,.rule .grid input{width:100%}
+.err{color:var(--bad)}.good{color:var(--ok)}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:4px 0}th{color:var(--muted);font-weight:500}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border-radius:0;padding:14px 0;color:var(--muted)}
+nav button.on{color:var(--accent);background:none}
+#toast{position:fixed;left:16px;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));text-align:center}
+#toast span{display:inline-block;background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div id="toast"></div>
+<nav id="nav"></nav>
+<script>
+const HOST = 'v24.fenixgroup.eu'
+const MODES = { comfort: '0', off: '1', frost: '2', eco: '3', boost: '4', program: '11' }
+const MODE_NAMES = Object.fromEntries(Object.entries(MODES).map(([k, v]) => [v, k]))
+const METRICS = { tmax: 'max °C', tmin: 'min °C', sunshine: 'sun h', solar: 'window kWh/m²' }
+const FACADES = [['S', 0], ['SSE', -22], ['SE', -45], ['ESE', -67], ['E', -90], ['ENE', -112], ['NE', -135], ['NNE', -157], ['N', 180], ['NNW', 157], ['NW', 135], ['WNW', 112], ['W', 90], ['WSW', 67], ['SW', 45], ['SSW', 22]]
+
+const store = {
+  get () { try { return JSON.parse(localStorage.getItem('fenix') || '{}') } catch { return {} } },
+  set (v) { try { localStorage.setItem('fenix', JSON.stringify({ ...store.get(), ...v })) } catch {} }
+}
+
+const S = { tab: 'zones', token: null, home: null, zones: [], pending: {}, config: null, configSha: null, state: null, forecast: null, error: null }
+
+function h (tag, props = {}, ...kids) {
+  const el = document.createElement(tag)
+  for (const [k, v] of Object.entries(props)) {
+    if (k.startsWith('on')) el.addEventListener(k.slice(2), v)
+    else if (k === 'class') el.className = v
+    else if (v !== undefined && v !== null && v !== false) el[k] = v
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid)
+  return el
+}
+
+function toast (msg) {
+  const t = document.getElementById('toast')
+  t.replaceChildren(h('span', {}, msg))
+  clearTimeout(toast.timer)
+  toast.timer = setTimeout(() => t.replaceChildren(), 3000)
+}
+
+const toC = raw => Math.round((Number(raw) - 320) / 18 * 10) / 10
+const toRaw = c => String(Math.round(c * 18 + 320))
+
+async function login () {
+  const { email, password } = store.get()
+  if (!email || !password) throw new Error('Set Fenix email and password in Settings')
+  const r = await fetch(`https://auth.${HOST}/realms/fenix/protocol/openid-connect/token`, {
+    method: 'POST',
+    body: new URLSearchParams({ grant_type: 'password', client_id: 'app-front', username: email, password })
+  })
+  if (!r.ok) throw new Error(`Login failed (${r.status})`)
+  S.token = (await r.json()).access_token
+  const u = await api('human/user/read/', { email })
+  if (!u.smarthomes?.length) throw new Error('Account has no homes')
+  const home = u.smarthomes[0]
+  S.home = { id: home.smarthome_id, lat: Number(home.latitude), lon: Number(home.longitude) }
+}
+
+async function api (endpoint, form, ok = [1, 8], retry = true) {
+  const r = await fetch(`https://${HOST}/api/v0.1/${endpoint}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${S.token}` },
+    body: new URLSearchParams(form)
+  })
+  if (r.status === 401 && retry) { await login(); return api(endpoint, form, ok, false) }
+  if (!r.ok) throw new Error(`${endpoint}: ${r.status}`)
+  const j = await r.json()
+  if (!ok.includes(Number(j.code?.code))) throw new Error(`${endpoint}: ${j.code?.key} ${j.code?.value}`)
+  return j.data
+}
+
+async function loadZones () {
+  if (!S.token) await login()
+  const d = await api('human/smarthome/read/', { smarthome_id: S.home.id })
+  S.zones = d.zones.filter(z => z.devices?.length).map(z => ({ label: z.zone_label, d: z.devices[0] }))
+}
+
+async function write (zone, params, field, want) {
+  const form = { smarthome_id: S.home.id, context: '1', peremption: '15000', 'query[id_device]': zone.d.id_device }
+  for (const [k, v] of Object.entries(params)) form[`query[${k}]`] = v
+  await api('human/query/push/', form, [8])
+  S.pending[zone.label] = 'sent, waiting for unit…'
+  render()
+  for (let i = 0; i < 12; i++) {
+    await new Promise(r => setTimeout(r, 5000))
+    await loadZones()
+    const z = S.zones.find(z => z.label === zone.label)
+    if (String(z?.d[field]) === want) { delete S.pending[zone.label]; render(); return }
+  }
+  S.pending[zone.label] = 'unit has not confirmed yet'
+  render()
+}
+
+function act (fn) {
+  return async (...a) => {
+    try { await fn(...a) } catch (e) { toast(e.message) }
+  }
+}
+
+async function gh (path, opts = {}) {
+  const { repo, ghToken } = store.get()
+  if (!repo || !ghToken) throw new Error('Set GitHub repo and token in Settings')
+  return fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+    ...opts,
+    headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/vnd.github+json', ...opts.headers }
+  })
+}
+
+const b64decode = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g, '')), c => c.charCodeAt(0)))
+const b64encode = s => btoa(Array.from(new TextEncoder().encode(s), b => String.fromCharCode(b)).join(''))
+
+async function ghRead (path) {
+  const r = await gh(path)
+  if (r.status === 404) return { data: null, sha: null }
+  if (!r.ok) throw new Error(`GitHub ${path}: ${r.status}`)
+  const j = await r.json()
+  return { data: JSON.parse(b64decode(j.content)), sha: j.sha }
+}
+
+async function loadConfig () {
+  const { data, sha } = await ghRead('config.json')
+  S.config = { lat: null, lon: null, facade_azimuth: 0, ntfy_topic: randomTopic(), auto_adjust: false, rules: [], ...data }
+  S.configSha = sha
+  S.state = (await ghRead('data/state.json')).data
+}
+
+async function saveConfig () {
+  const body = { message: 'config: update from web app', content: b64encode(JSON.stringify(S.config, null, 2) + '\n') }
+  if (S.configSha) body.sha = S.configSha
+  const r = await gh('config.json', { method: 'PUT', body: JSON.stringify(body) })
+  if (r.status === 409) throw new Error('Config changed elsewhere, reload it')
+  if (!r.ok) throw new Error(`Save failed (${r.status})`)
+  S.configSha = (await r.json()).content.sha
+  toast('Saved, applies on next hourly run')
+}
+
+function randomTopic () {
+  return 'heating-' + Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function loadForecast () {
+  const c = S.config || {}
+  if (!S.home && (c.lat == null || c.lon == null)) await login()
+  const lat = c.lat ?? S.home.lat
+  const lon = c.lon ?? S.home.lon
+  const q = new URLSearchParams({
+    latitude: lat, longitude: lon, tilt: 90, azimuth: c.facade_azimuth ?? 0, timezone: 'auto', forecast_days: 2,
+    daily: 'temperature_2m_max,temperature_2m_min,sunshine_duration', hourly: 'global_tilted_irradiance'
+  })
+  const r = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`)
+  if (!r.ok) throw new Error(`Forecast ${r.status}`)
+  const j = await r.json()
+  const solar = {}
+  j.hourly.time.forEach((t, i) => { solar[t.slice(0, 10)] = (solar[t.slice(0, 10)] || 0) + (j.hourly.global_tilted_irradiance[i] || 0) })
+  S.forecast = j.daily.time.map((date, i) => ({
+    date,
+    tmax: j.daily.temperature_2m_max[i],
+    tmin: j.daily.temperature_2m_min[i],
+    sunshine: j.daily.sunshine_duration[i] / 3600,
+    solar: (solar[date] || 0) / 1000
+  }))
+}
+
+const modeName = v => MODE_NAMES[String(v)] || `schedule (${v})`
+
+function zoneCard (z) {
+  const d = z.d
+  const open = S.open === z.label
+  const card = h('div', { class: 'card zone', onclick: e => { if (e.target === card || e.target.closest('.head')) { S.open = open ? null : z.label; render() } } },
+    h('div', { class: 'row head' },
+      h('div', {}, h('div', {}, h('b', {}, z.label), ' ', d.heating_up === '1' || d.heating_up === 1 ? h('span', { class: 'flame' }, '● heating') : null),
+        h('div', { class: 'muted' }, `${modeName(d.gv_mode)} · comfort ${toC(d.consigne_confort)}° · eco ${toC(d.consigne_eco)}°`)),
+      h('div', { class: 'temp' }, `${toC(d.temperature_air)}°`)),
+    S.pending[z.label] ? h('div', { class: 'muted' }, S.pending[z.label]) : null
+  )
+  if (!open) return card
+  const lo = toC(d.min_set_point); const hi = toC(d.max_set_point)
+  card.append(
+    h('div', { class: 'chips' }, Object.entries(MODES).map(([name, code]) =>
+      h('button', { class: String(d.gv_mode) === code ? 'on' : '', onclick: act(() => write(z, { gv_mode: code, nv_mode: code }, 'gv_mode', code)) }, name))),
+    ...[['comfort', 'consigne_confort'], ['eco', 'consigne_eco']].map(([name, field]) => {
+      const input = h('input', { type: 'number', step: '0.5', min: lo, max: hi, value: toC(d[field]), inputMode: 'decimal' })
+      return h('div', { class: 'row', style: 'margin-top:8px' }, h('span', {}, name), h('span', { class: 'row' }, input, h('button', {
+        onclick: act(() => {
+          const c = Number(input.value)
+          if (!(c >= lo && c <= hi)) throw new Error(`Must be ${lo}–${hi} °C`)
+          return write(z, { [field]: toRaw(c) }, field, toRaw(c))
+        })
+      }, 'Set')))
+    })
+  )
+  return card
+}
+
+function zonesView () {
+  return [
+    h('h1', {}, 'Heating', h('button', { onclick: act(async () => { await loadZones(); render() }) }, '↻')),
+    S.zones.length ? S.zones.map(zoneCard) : h('p', { class: 'muted' }, 'No zones loaded.')
+  ]
+}
+
+function forecastView () {
+  const f = S.forecast
+  const rules = S.config?.rules || []
+  const st = S.state || {}
+  return [
+    h('h1', {}, 'Forecast', h('button', { onclick: act(async () => { await loadForecast(); render() }) }, '↻')),
+    f ? h('div', { class: 'card' }, h('table', {},
+      h('tr', {}, h('th', {}, ''), f.map(d => h('th', {}, d.date))),
+      Object.entries(METRICS).map(([k, label]) => h('tr', {}, h('td', {}, label), f.map(d => h('td', {}, d[k].toFixed(1))))))) : h('p', { class: 'muted' }, 'Loading…'),
+    h('h2', {}, 'Rules'),
+    rules.length && f ? rules.map(r => {
+      const v = f[r.day === 'today' ? 0 : 1][r.metric]
+      const hit = r.op === '>' ? v > r.value : v < r.value
+      return h('div', { class: 'card row' }, h('span', {}, r.message || r.id, h('div', { class: 'muted' }, `${r.day} ${METRICS[r.metric]} ${r.op} ${r.value}`)),
+        h('b', { class: hit ? 'good' : 'muted' }, hit ? 'fires' : 'no'))
+    }) : h('p', { class: 'muted' }, S.config ? 'No rules yet.' : 'Connect GitHub in Settings to see rules.'),
+    (st.pending?.length || st.reverts?.length) ? [h('h2', {}, 'Auto-adjust'),
+      (st.pending || []).map(p => h('div', { class: 'card' }, `${p.date}: ${p.action.zones.join(', ')} → ${p.action.mode}`)),
+      (st.reverts || []).map(r => h('div', { class: 'card' }, `${r.zone} overridden on ${r.date}, reverts next day`))] : null
+  ]
+}
+
+function ruleEditor (r, i) {
+  const c = S.config
+  const set = (k, parse = v => v) => e => { r[k] = parse(e.target.value) }
+  const sel = (k, opts, parse) => h('select', { onchange: set(k, parse) }, opts.map(([v, l]) => h('option', { value: v, selected: String(r[k]) === String(v) }, l)))
+  const action = r.action || { zones: [], mode: '' }
+  return h('div', { class: 'rule' },
+    h('label', {}, 'Message', h('input', { value: r.message || '', oninput: set('message') })),
+    h('div', { class: 'grid' },
+      sel('day', [['today', 'today'], ['tomorrow', 'tomorrow']]),
+      sel('metric', Object.entries(METRICS)),
+      sel('op', [['>', 'above'], ['<', 'below']]),
+      h('input', { type: 'number', step: '0.1', value: r.value, inputMode: 'decimal', oninput: set('value', Number) })),
+    h('label', {}, 'Auto-adjust mode', h('select', {
+      onchange: e => {
+        if (e.target.value) r.action = { ...action, mode: e.target.value }
+        else delete r.action
+        render()
+      }
+    }, h('option', { value: '' }, 'notify only'), ['eco', 'frost', 'off', 'comfort', 'program'].map(m => h('option', { value: m, selected: action.mode === m }, m)))),
+    r.action ? h('div', { class: 'chips' }, (S.zones.length ? S.zones.map(z => z.label) : action.zones).map(label =>
+      h('button', {
+        class: action.zones.includes(label) ? 'on' : '',
+        onclick: () => {
+          r.action.zones = action.zones.includes(label) ? action.zones.filter(l => l !== label) : [...action.zones, label]
+          render()
+        }
+      }, label))) : null,
+    h('button', { onclick: () => { c.rules.splice(i, 1); render() } }, 'Delete rule')
+  )
+}
+
+function settingsView () {
+  const s = store.get()
+  const c = S.config
+  const field = (label, key, type = 'text') => h('label', {}, label, h('input', { type, value: s[key] || '', autocomplete: 'off', onchange: e => store.set({ [key]: e.target.value.trim() }) }))
+  return [
+    h('h1', {}, 'Settings'),
+    h('h2', {}, 'Fenix account'),
+    h('div', { class: 'card' },
+      field('Email', 'email', 'email'), field('Password', 'password', 'password'),
+      h('button', { class: 'primary', onclick: act(async () => { S.token = null; await loadZones(); toast('Logged in'); render() }) }, 'Log in')),
+    h('h2', {}, 'GitHub (forecast config)'),
+    h('div', { class: 'card' },
+      field('Private repo (owner/name)', 'repo'), field('Fine-grained token (contents: read/write, this repo only)', 'ghToken', 'password'),
+      h('button', { class: 'primary', onclick: act(async () => { await loadConfig(); await loadForecast(); render() }) }, c ? 'Reload config' : 'Load config')),
+    c ? [
+      h('h2', {}, 'Location & windows'),
+      h('div', { class: 'card' },
+        h('div', { class: 'grid' },
+          h('label', {}, 'Latitude', h('input', { type: 'number', step: 'any', placeholder: S.home ? `home ${S.home.lat}` : 'from Fenix home', value: c.lat ?? '', oninput: e => { c.lat = e.target.value === '' ? null : Number(e.target.value) } })),
+          h('label', {}, 'Longitude', h('input', { type: 'number', step: 'any', placeholder: S.home ? `home ${S.home.lon}` : 'from Fenix home', value: c.lon ?? '', oninput: e => { c.lon = e.target.value === '' ? null : Number(e.target.value) } }))),
+        h('button', {
+          onclick: () => navigator.geolocation.getCurrentPosition(p => {
+            c.lat = Math.round(p.coords.latitude * 1e4) / 1e4
+            c.lon = Math.round(p.coords.longitude * 1e4) / 1e4
+            render()
+          }, e => toast(e.message))
+        }, 'Use my location'),
+        h('label', {}, 'Main windows face', h('select', { onchange: e => { c.facade_azimuth = Number(e.target.value) } },
+          FACADES.map(([n, a]) => h('option', { value: a, selected: c.facade_azimuth === a }, n))))),
+      h('h2', {}, 'Notifications'),
+      h('div', { class: 'card' },
+        h('label', {}, 'ntfy topic (subscribe to it in the ntfy app)', h('input', { value: c.ntfy_topic, oninput: e => { c.ntfy_topic = e.target.value.trim() } })),
+        h('div', { class: 'row' },
+          h('button', { onclick: () => { c.ntfy_topic = randomTopic(); render() } }, 'New random topic'),
+          h('button', {
+            onclick: act(async () => {
+              const r = await fetch(`https://ntfy.sh/${encodeURIComponent(c.ntfy_topic)}`, { method: 'POST', body: 'Test from heating app', headers: { Title: 'Heating' } })
+              toast(r.ok ? 'Sent' : `ntfy ${r.status}`)
+            })
+          }, 'Send test')),
+        h('label', { class: 'row' }, h('span', {}, 'Auto-adjust heating (otherwise notify only)'),
+          h('input', { type: 'checkbox', checked: c.auto_adjust, onchange: e => { c.auto_adjust = e.target.checked } }))),
+      h('h2', {}, 'Rules'),
+      h('div', { class: 'card' },
+        c.rules.map(ruleEditor),
+        h('div', { class: 'row', style: 'margin-top:12px' },
+          h('button', {
+            onclick: () => {
+              c.rules.push({ id: 'r' + Date.now().toString(36), day: 'tomorrow', metric: 'solar', op: '>', value: 3, message: 'Sunny tomorrow, windows will warm the flat' })
+              render()
+            }
+          }, '+ Add rule'),
+          h('button', { class: 'primary', onclick: act(saveConfig) }, 'Save')))
+    ] : null
+  ]
+}
+
+function render () {
+  const views = { zones: zonesView, forecast: forecastView, settings: settingsView }
+  const y = scrollY
+  document.getElementById('app').replaceChildren(...[views[S.tab]()].flat(3).filter(Boolean))
+  document.getElementById('nav').replaceChildren(...Object.keys(views).map(t =>
+    h('button', { class: S.tab === t ? 'on' : '', onclick: () => { S.tab = t; scrollTo(0, 0); render() } }, t[0].toUpperCase() + t.slice(1))))
+  scrollTo(0, y)
+}
+
+async function boot () {
+  const s = store.get()
+  if (!s.email) S.tab = 'settings'
+  render()
+  if (s.email) await act(async () => { await loadZones(); render() })()
+  if (s.repo && s.ghToken) await act(loadConfig)()
+  await act(loadForecast)()
+  render()
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && S.token && !Object.keys(S.pending).length) act(async () => { await loadZones(); render() })()
+})
+boot()
+</script>
+</body>
+</html>
