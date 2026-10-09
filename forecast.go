@@ -21,6 +21,7 @@ type Config struct {
 	Lat        *float64        `json:"lat"`
 	Lon        *float64        `json:"lon"`
 	NtfyTopic  string          `json:"ntfy_topic"`
+	Lang       string          `json:"lang"`
 	AutoAdjust bool            `json:"auto_adjust"`
 	Sun        SunConfig       `json:"sun"`
 	Rooms      map[string]Room `json:"rooms"`
@@ -84,6 +85,54 @@ type Span struct{ Start, SunStart, SunEnd int }
 var dayIndex = map[string]int{"today": 0, "tomorrow": 1}
 
 var metricUnits = map[string]string{"tmax": "°C", "tmin": "°C", "sunshine": "h"}
+
+var messages = map[string]map[string]string{
+	"en": {
+		"title":       "Heating",
+		"back":        "%s back to its normal mode (%s)",
+		"newDay":      "new day",
+		"sunOff":      "sun control turned off",
+		"lessSun":     "less sun than forecast",
+		"sunGone":     "sun is gone",
+		"headsUp":     "Tomorrow: %s",
+		"headsUpRoom": "%s sun %02d–%02d h, eco from %02d h",
+		"autoOff":     " (auto-adjust is off)",
+		"apply":       "☀ %s → eco until %02d:00, sun expected %02d–%02d h",
+		"manual":      "%s was changed by hand, leaving it alone today",
+		"rule":        "%s (%s %s %.1f %s)",
+		"today":       "today",
+		"tomorrow":    "tomorrow",
+		"tmax":        "max",
+		"tmin":        "min",
+		"sunshine":    "sunshine",
+	},
+	"cs": {
+		"title":       "Topení",
+		"back":        "%s zpět v původním režimu (%s)",
+		"newDay":      "nový den",
+		"sunOff":      "řízení podle slunce vypnuto",
+		"lessSun":     "méně slunce, než se čekalo",
+		"sunGone":     "slunce už nesvítí",
+		"headsUp":     "Zítra: %s",
+		"headsUpRoom": "%s slunce %02d–%02d h, útlum od %02d h",
+		"autoOff":     " (automatika je vypnutá)",
+		"apply":       "☀ %s → útlum do %02d:00, slunce čekáme %02d–%02d h",
+		"manual":      "%s někdo přepnul ručně, dnes ho nechávám být",
+		"rule":        "%s (%s %s %.1f %s)",
+		"today":       "dnes",
+		"tomorrow":    "zítra",
+		"tmax":        "max.",
+		"tmin":        "min.",
+		"sunshine":    "slunce",
+	},
+}
+
+func tr(lang, key string) string {
+	if m, ok := messages[lang]; ok {
+		return m[key]
+	}
+	return messages["en"][key]
+}
 
 func (sc SunConfig) withDefaults() SunConfig {
 	if sc == (SunConfig{}) {
@@ -208,16 +257,15 @@ func fetchForecast(base string, lat, lon float64, azimuths []float64) (Forecast,
 	return fc, nil
 }
 
-func notify(base, topic, msg string) error {
+func notify(base, topic, title, msg string) error {
 	fmt.Println("notify:", msg)
 	if topic == "" {
 		return nil
 	}
-	req, err := http.NewRequest(http.MethodPost, base+"/"+url.PathEscape(topic), strings.NewReader(msg))
+	req, err := http.NewRequest(http.MethodPost, base+"/"+url.PathEscape(topic)+"?"+url.Values{"title": {title}}.Encode(), strings.NewReader(msg))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Title", "Heating")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -240,6 +288,7 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 	today, tomorrow := fc.Days[0].Date, fc.Days[1].Date
 	hour, _ := strconv.Atoi(fc.Now[11:13])
 	sc := cfg.Sun.withDefaults()
+	T := func(k string) string { return tr(cfg.Lang, k) }
 	var errs []error
 	if st.Fired == nil {
 		st.Fired = map[string][]string{}
@@ -283,13 +332,13 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 				return
 			}
 			s.Done = true
-			errs = append(errs, send(fmt.Sprintf("%s back to its normal mode (%s)", title(label), why)))
+			errs = append(errs, send(fmt.Sprintf(T("back"), title(label), T(why))))
 		}
 
 		s := st.Sun[label]
 		if s != nil && s.Date != today {
 			if s.Applied && !s.Done {
-				restore(s, "new day")
+				restore(s, "newDay")
 				if !s.Done {
 					continue
 				}
@@ -307,7 +356,7 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 
 		if enabled && hour >= sc.HeadsUpHour && st.HeadsUp != today {
 			if w, ok := sunWindow(room, power, fc.GTI, tomorrow, sc); ok {
-				headsUp = append(headsUp, fmt.Sprintf("%s sun %02d–%02d h, eco from %02d h", title(label), w.SunStart, w.SunEnd+1, w.Start))
+				headsUp = append(headsUp, fmt.Sprintf(T("headsUpRoom"), title(label), w.SunStart, w.SunEnd+1, w.Start))
 			}
 		}
 
@@ -337,27 +386,27 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 				continue
 			}
 			s.Applied = true
-			errs = append(errs, send(fmt.Sprintf("☀ %s → eco until %02d:00, sun expected %02d–%02d h", title(label), w.SunEnd+1, w.SunStart, w.SunEnd+1)))
+			errs = append(errs, send(fmt.Sprintf(T("apply"), title(label), w.SunEnd+1, w.SunStart, w.SunEnd+1)))
 			continue
 		}
 		switch {
 		case gv != modes["eco"]:
 			s.Done = true
-			errs = append(errs, send(fmt.Sprintf("%s was changed by hand, leaving it alone today", title(label))))
+			errs = append(errs, send(fmt.Sprintf(T("manual"), title(label))))
 		case !enabled:
-			restore(s, "sun control turned off")
+			restore(s, "sunOff")
 		case !ok:
-			restore(s, "less sun than forecast")
+			restore(s, "lessSun")
 		case hour > w.SunEnd:
-			restore(s, "sun is gone")
+			restore(s, "sunGone")
 		}
 	}
 	if hour >= sc.HeadsUpHour && st.HeadsUp != today {
 		st.HeadsUp = today
 		if len(headsUp) > 0 {
-			msg := "Tomorrow: " + strings.Join(headsUp, "; ")
+			msg := fmt.Sprintf(T("headsUp"), strings.Join(headsUp, "; "))
 			if !cfg.AutoAdjust {
-				msg += " (auto-adjust is off)"
+				msg += T("autoOff")
 			}
 			errs = append(errs, send(msg))
 		}
@@ -374,7 +423,7 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 			continue
 		}
 		st.Fired[day.Date] = append(st.Fired[day.Date], r.ID)
-		errs = append(errs, send(fmt.Sprintf("%s (%s %s %.1f %s)", r.Message, r.Day, r.Metric, v, metricUnits[r.Metric])))
+		errs = append(errs, send(fmt.Sprintf(T("rule"), r.Message, T(r.Day), T(r.Metric), v, metricUnits[r.Metric])))
 	}
 	for date := range st.Fired {
 		if date < today {
@@ -427,7 +476,7 @@ func forecast(c *Client, configPath, statePath string) error {
 		fmt.Printf("%s tmax=%.1f tmin=%.1f sunshine=%.1fh\n", d.Date, d.Metrics["tmax"], d.Metrics["tmin"], d.Metrics["sunshine"])
 	}
 	ntfy := env("NTFY_URL", "https://ntfy.sh")
-	stepErr := step(c, cfg, &st, fc, func(msg string) error { return notify(ntfy, cfg.NtfyTopic, msg) })
+	stepErr := step(c, cfg, &st, fc, func(msg string) error { return notify(ntfy, cfg.NtfyTopic, tr(cfg.Lang, "title"), msg) })
 	st.LastRun = time.Now().UTC().Format(time.RFC3339)
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

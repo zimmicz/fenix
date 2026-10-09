@@ -99,7 +99,7 @@ func TestStep(t *testing.T) {
 		t.Fatalf("too early: %v", unit.pushed)
 	}
 	run("2026-10-10T07:07", -1)
-	if unit.gv != "3" || len(sent) != 2 || !strings.HasPrefix(sent[0], "☀ Obyvak → eco until 15:00") || sent[1] != "Freezing (today tmax -1.0 °C)" {
+	if unit.gv != "3" || len(sent) != 2 || !strings.HasPrefix(sent[0], "☀ Obyvak → eco until 15:00") || sent[1] != "Freezing (today max -1.0 °C)" {
 		t.Fatalf("apply: gv=%s sent=%q", unit.gv, sent)
 	}
 	run("2026-10-10T12:07", -1)
@@ -159,5 +159,23 @@ func TestStaleRevert(t *testing.T) {
 	}
 	if unit.gv != "16" || len(sent) != 1 || st.Sun["OBYVAK"].Date != "2026-10-10" || st.Sun["OBYVAK"].Applied {
 		t.Fatalf("stale: gv=%s sent=%q st=%+v", unit.gv, sent, st.Sun["OBYVAK"])
+	}
+}
+
+func TestCzech(t *testing.T) {
+	c, _ := fakeFenix(t)
+	cfg := Config{Lang: "cs", Rooms: map[string]Room{"OBYVAK": obyvak}, Rules: []Rule{{ID: "f", Day: "tomorrow", Metric: "tmin", Op: "<", Value: 0, Message: "Mráz"}}}
+	var st State
+	var sent []string
+	fc := Forecast{Now: "2026-10-09T18:07", GTI: gti(map[string][]int{"2026-10-10": {10, 11}}), Days: []Day{
+		{Date: "2026-10-09", Metrics: map[string]float64{}},
+		{Date: "2026-10-10", Metrics: map[string]float64{"tmin": -2}},
+	}}
+	if err := step(c, cfg, &st, fc, func(m string) error { sent = append(sent, m); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"Zítra: Obyvak slunce 10–12 h, útlum od 07 h (automatika je vypnutá)", "Mráz (zítra min. -2.0 °C)"}
+	if strings.Join(sent, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %q", sent)
 	}
 }

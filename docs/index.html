@@ -97,6 +97,7 @@ input,select,textarea{font:inherit;color:inherit}
 .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#ffc53d,#ff8a00)}
 
 .warn{background:rgba(255,59,48,.12);color:var(--fg);border-radius:16px;padding:12px 16px;margin:-6px 0 14px;font-size:15px;display:flex;flex-direction:column;gap:4px}.warn b{color:var(--red)}
+.help{background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.help h3{margin:0 0 6px;font-size:17px}.help p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
 .empty{background:var(--card);border-radius:22px;padding:28px 22px;text-align:center;box-shadow:var(--shadow)}
 .empty svg{width:56px;height:56px;color:var(--accent)}
 .empty h2{margin:12px 0 6px;font-size:22px}
@@ -134,6 +135,7 @@ nav button.on{color:var(--accent)}
 
 .savebar{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));display:none;justify-content:center;z-index:6}
 .savebar.show{display:flex}
+body.dirty{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .savebar .btn{box-shadow:0 8px 24px rgba(255,107,26,.35);width:100%;max-width:528px}
 #toast{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 10px);display:flex;justify-content:center;z-index:20;pointer-events:none}
 #toast span{background:var(--card);color:var(--fg);padding:12px 18px;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.18);font-size:15px;font-weight:500;animation:fade .2s}
@@ -158,25 +160,145 @@ const ICONS = {
   cloud: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 19a5 5 0 0 1-.6-10A6.5 6.5 0 0 1 19 9.6 4.7 4.7 0 0 1 18 19H7z"/></svg>',
   partly: '<svg viewBox="0 0 24 24"><g stroke="#ffb020" stroke-width="2" stroke-linecap="round" fill="none"><path d="M9 2.5v1.6M3.5 8H5M4.9 3.9 6 5M13.1 3.9 12 5"/></g><circle cx="9" cy="8.5" r="3.4" fill="#ffb020"/><path fill="#b8c2cf" d="M8.5 20.5a4.2 4.2 0 0 1-.4-8.4 5.4 5.4 0 0 1 10.4.6 3.9 3.9 0 0 1-.8 7.8H8.5z"/></svg>',
   refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>',
+  help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.6-3 4.5"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2.5 11h2.7v9.5h5.3v-6h3v6h5.3V11h2.7z"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3.3h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
   chev: '<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1 1 6 6-6 6"/></svg>'
 }
+
+const TEXT = {
+  en: {
+    appName: 'Heating', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
+    done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
+    m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Boost', m_off: 'Off',
+    met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
+    f_0: 'South', f_m22: 'South-southeast', f_m45: 'Southeast', f_m67: 'East-southeast', f_m90: 'East', f_m112: 'East-northeast', f_m135: 'Northeast', f_m157: 'North-northeast', f_180: 'North', f_157: 'North-northwest', f_135: 'Northwest', f_112: 'West-northwest', f_90: 'West', f_67: 'West-southwest', f_45: 'Southwest', f_22: 'South-southwest',
+    errSignInFirst: 'Sign in to Fenix first', errWrongLogin: 'Wrong email or password', errSignIn: 'Sign-in failed ({0})', errNoHome: 'This account has no home', errFenix: 'Fenix error {0}',
+    errGhFirst: 'Connect GitHub first', errGhToken: 'GitHub token is invalid or expired', errGh: 'GitHub error {0}', errConflict: 'Changed elsewhere, pull to refresh', errSave: 'Save failed ({0})', errForecast: 'Forecast unavailable ({0})',
+    waitingUnit: 'Waiting for the unit to confirm…', saved: 'Saved', notConfirmed: 'Sent, the unit has not confirmed yet', switchingTo: 'Switching to {0}…', saving: 'Saving…',
+    savedToast: 'Saved · applies at the next hourly check',
+    welcome: 'Welcome', welcomeText: 'Sign in with your Fenix account to control your floor heating.', signIn: 'Sign in', howItWorks: 'How it works',
+    outside: 'Outside {0}°', nHeating: '{0} heating', nothingHeating: 'Nothing heating', loading: 'Loading…',
+    checkRan: 'Hourly check ran at {0}', noCheckH: 'No hourly check for {0} h', noCheckD: 'No hourly check for {0} days',
+    lastRan: 'Last one ran {0}. Check the GitHub Actions page of your repository.', stillEco: 'Still on eco from sun control: {0}. Switch them back by hand if needed.',
+    heating: 'Heating', idle: 'Idle', target: 'target {0}°', temperatures: 'Temperatures', lower: 'Lower {0}', raise: 'Raise {0}',
+    today: 'Today', tomorrow: 'Tomorrow', above: 'above', below: 'below', aboveC: 'Above', belowC: 'Below',
+    sunPlan: 'sun {0}–{1}, eco from {2}', notEnoughSun: 'not enough sun', sunOff: 'Sun control off', ecoNow: 'Eco now',
+    autoOnSub: 'Automatic sun control on', notifyOnlySub: 'Notifications only', sunshine: 'Sunshine',
+    sunInRooms: 'Sun in your rooms', addWindows: 'Add windows to your rooms',
+    sunNote: 'A room is sunny when sun through its windows covers {0}% of its heater power. Eco starts {1} h before the sun so the floor cools in time.',
+    yourRules: 'Your rules', untitled: 'Untitled rule', fires: 'Fires', quiet: 'Quiet', addARule: 'Add a rule', connectGhForSun: 'Connect GitHub to use sun control and rules',
+    accounts: 'Accounts', notSignedIn: 'Not signed in', notConnected: 'Not connected', ghNote: 'GitHub stores your settings in your private repository, where the hourly check reads them.',
+    language: 'Language', langAuto: 'Automatic', roomsWindows: 'Rooms & windows', noWindows: 'No windows', sunOffShort: 'sun off', signInToList: 'Sign in to Fenix to list rooms',
+    roomsNote: 'Add each room\'s windows so the app knows how much sun reaches it.',
+    sunControl: 'Sun control', autoSwitch: 'Switch rooms to eco automatically', sunnyWhen: 'Sunny when sun covers', ofHeater: 'of the room\'s heater power',
+    startEarlier: 'Start eco earlier', floorCool: 'the floor needs time to cool', headsUp: 'Tomorrow\'s heads-up', eveningNote: 'evening notification',
+    location: 'Location', fenixHome: 'Fenix home',
+    sunControlNote: 'When on, sunny rooms switch to eco before the sun arrives and go back to their normal mode when it is gone or clouds come. A room you change by hand is left alone for the rest of the day. When off, you only get the evening heads-up.',
+    notifications: 'Notifications', ntfyTopic: 'ntfy topic', copyTopic: 'Copy topic', topicCopied: 'Topic copied', sendTest: 'Send test notification', testBody: 'Notifications work 👍', testSent: 'Test sent', ntfyErr: 'ntfy error {0}',
+    ntfyNote: 'Install the free ntfy app and subscribe to this topic. Anyone who knows the topic can read it, so keep it private.',
+    weatherRules: 'Weather rules', addRule: 'Add rule', newRuleMsg: 'Frost tomorrow', rulesNote: 'Rules only send a notification, once per day.',
+    rule: 'Rule', message: 'Message', notifText: 'Notification text', when: 'When', measure: 'Measure', threshold: 'Threshold', wouldNotify: 'would notify', nowValue: 'Now: {0} {1} {2} → {3}', deleteRule: 'Delete rule',
+    useSun: 'Use sun for this room', heater: 'Heater {0} kW.', heaterUnknown: 'Heater power unknown.', windowN: 'Window {0}', faces: 'Faces', width: 'Width', height: 'Height', howMany: 'How many', identical: 'identical windows', removeWindow: 'Remove window', addWindow: 'Add window',
+    measureGlass: 'Measure the glass, not the frame. Floor-to-ceiling panel ≈ 1 × 2.5 m.',
+    fenixAccount: 'Fenix account', email: 'Email', password: 'Password', required: 'Required', fenixNote: 'Same login as the official Fenix app. Stored only on this device.', signedIn: 'Signed in',
+    repository: 'Repository', token: 'Token', connect: 'Connect', connected: 'Connected', ghSheetNote: 'Your private repository with the hourly workflow. Use a fine-grained token limited to that repository with Contents: read and write.',
+    latitude: 'Latitude', longitude: 'Longitude', useThese: 'Use these', locNote: 'Leave empty to use the location of your Fenix home.', useMyLocation: 'Use my current location',
+    nWindows: n => `${n} window${n === 1 ? '' : 's'}`
+  },
+  cs: {
+    appName: 'Topení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
+    done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
+    m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Boost', m_off: 'Vypnuto',
+    met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
+    f_0: 'Jih', f_m22: 'Jihojihovýchod', f_m45: 'Jihovýchod', f_m67: 'Východojihovýchod', f_m90: 'Východ', f_m112: 'Východoseverovýchod', f_m135: 'Severovýchod', f_m157: 'Severoseverovýchod', f_180: 'Sever', f_157: 'Severoseverozápad', f_135: 'Severozápad', f_112: 'Západoseverozápad', f_90: 'Západ', f_67: 'Západojihozápad', f_45: 'Jihozápad', f_22: 'Jihojihozápad',
+    errSignInFirst: 'Nejdřív se přihlas do Fenixu', errWrongLogin: 'Špatný e-mail nebo heslo', errSignIn: 'Přihlášení selhalo ({0})', errNoHome: 'Účet nemá žádnou domácnost', errFenix: 'Chyba Fenixu {0}',
+    errGhFirst: 'Nejdřív připoj GitHub', errGhToken: 'GitHub token je neplatný nebo vypršel', errGh: 'Chyba GitHubu {0}', errConflict: 'Mezitím se to změnilo jinde, obnov stránku', errSave: 'Uložení selhalo ({0})', errForecast: 'Předpověď není dostupná ({0})',
+    waitingUnit: 'Čekám, až jednotka potvrdí…', saved: 'Uloženo', notConfirmed: 'Odesláno, jednotka zatím nepotvrdila', switchingTo: 'Přepínám na {0}…', saving: 'Ukládám…',
+    savedToast: 'Uloženo · projeví se při další hodinové kontrole',
+    welcome: 'Vítej', welcomeText: 'Přihlas se účtem Fenix a ovládej podlahové topení.', signIn: 'Přihlásit', howItWorks: 'Jak to funguje',
+    outside: 'Venku {0}°', nHeating: 'Topí: {0}', nothingHeating: 'Nic netopí', loading: 'Načítám…',
+    checkRan: 'Hodinová kontrola proběhla v {0}', noCheckH: 'Žádná hodinová kontrola už {0} h', noCheckD: 'Žádná hodinová kontrola už {0} dní',
+    lastRan: 'Naposledy proběhla {0}. Zkontroluj stránku GitHub Actions ve svém repozitáři.', stillEco: 'Pořád v útlumu kvůli slunci: {0}. Případně je přepni zpátky ručně.',
+    heating: 'Topí', idle: 'Netopí', target: 'cíl {0}°', temperatures: 'Teploty', lower: 'Snížit {0}', raise: 'Zvýšit {0}',
+    today: 'Dnes', tomorrow: 'Zítra', above: 'nad', below: 'pod', aboveC: 'Nad', belowC: 'Pod',
+    sunPlan: 'slunce {0}–{1}, útlum od {2}', notEnoughSun: 'málo slunce', sunOff: 'Řízení podle slunce vypnuto', ecoNow: 'Teď útlum',
+    autoOnSub: 'Automatické řízení podle slunce zapnuto', notifyOnlySub: 'Jen upozornění', sunshine: 'Slunce',
+    sunInRooms: 'Slunce v místnostech', addWindows: 'Přidat okna do místností',
+    sunNote: 'Místnost je slunečná, když slunce okny pokryje {0} % výkonu jejího topení. Útlum začíná {1} h před sluncem, aby podlaha stihla vychladnout.',
+    yourRules: 'Tvoje pravidla', untitled: 'Pravidlo bez názvu', fires: 'Platí', quiet: 'Neplatí', addARule: 'Přidat pravidlo', connectGhForSun: 'Připoj GitHub pro řízení podle slunce a pravidla',
+    accounts: 'Účty', notSignedIn: 'Nepřihlášeno', notConnected: 'Nepřipojeno', ghNote: 'GitHub ukládá nastavení do tvého soukromého repozitáře, odkud je čte hodinová kontrola.',
+    language: 'Jazyk', langAuto: 'Automaticky', roomsWindows: 'Místnosti a okna', noWindows: 'Bez oken', sunOffShort: 'slunce vyp.', signInToList: 'Přihlas se do Fenixu, ať vidíš místnosti',
+    roomsNote: 'Zadej okna v každé místnosti, ať aplikace ví, kolik slunce do ní svítí.',
+    sunControl: 'Řízení podle slunce', autoSwitch: 'Automaticky přepínat na útlum', sunnyWhen: 'Slunečno, když slunce pokryje', ofHeater: 'výkonu topení v místnosti',
+    startEarlier: 'Útlum dřív o', floorCool: 'podlaha potřebuje čas vychladnout', headsUp: 'Upozornění na zítřek', eveningNote: 'večerní notifikace',
+    location: 'Poloha', fenixHome: 'Domácnost Fenix',
+    sunControlNote: 'Když je zapnuto, slunečné místnosti přejdou do útlumu ještě před sluncem a vrátí se do původního režimu, až slunce zmizí nebo přijdou mraky. Místnost, kterou přepneš ručně, už ten den nechá být. Když je vypnuto, dostaneš jen večerní upozornění.',
+    notifications: 'Notifikace', ntfyTopic: 'ntfy téma', copyTopic: 'Zkopírovat téma', topicCopied: 'Téma zkopírováno', sendTest: 'Poslat testovací notifikaci', testBody: 'Notifikace fungují 👍', testSent: 'Test odeslán', ntfyErr: 'Chyba ntfy {0}',
+    ntfyNote: 'Nainstaluj si zdarma aplikaci ntfy a přihlas se k tomuto tématu. Kdo zná téma, může ho číst, tak ho nikomu nedávej.',
+    weatherRules: 'Pravidla podle počasí', addRule: 'Přidat pravidlo', newRuleMsg: 'Zítra mráz', rulesNote: 'Pravidla jen pošlou notifikaci, nejvýš jednou denně.',
+    rule: 'Pravidlo', message: 'Zpráva', notifText: 'Text notifikace', when: 'Kdy', measure: 'Veličina', threshold: 'Hranice', wouldNotify: 'upozorní', nowValue: 'Teď: {0} {1} {2} → {3}', deleteRule: 'Smazat pravidlo',
+    useSun: 'Řídit podle slunce', heater: 'Topení {0} kW.', heaterUnknown: 'Výkon topení neznámý.', windowN: 'Okno {0}', faces: 'Směr', width: 'Šířka', height: 'Výška', howMany: 'Počet', identical: 'stejných oken', removeWindow: 'Odebrat okno', addWindow: 'Přidat okno',
+    measureGlass: 'Měř sklo, ne rám. Okno od podlahy ke stropu ≈ 1 × 2,5 m.',
+    fenixAccount: 'Účet Fenix', email: 'E-mail', password: 'Heslo', required: 'Povinné', fenixNote: 'Stejné přihlášení jako v oficiální aplikaci Fenix. Uloží se jen v tomto zařízení.', signedIn: 'Přihlášeno',
+    repository: 'Repozitář', token: 'Token', connect: 'Připojit', connected: 'Připojeno', ghSheetNote: 'Tvůj soukromý repozitář s hodinovým workflow. Použij fine-grained token omezený na tento repozitář s oprávněním Contents: read and write.',
+    latitude: 'Zeměpisná šířka', longitude: 'Zeměpisná délka', useThese: 'Použít', locNote: 'Nech prázdné a použije se poloha domácnosti Fenix.', useMyLocation: 'Použít moji aktuální polohu',
+    nWindows: n => `${n} ${n === 1 ? 'okno' : n < 5 ? 'okna' : 'oken'}`
+  }
+}
+
+const HELP = {
+  en: [
+    ['What this is', 'A remote control for your Fenix floor heating plus a robot that checks the weather every hour. The robot runs on GitHub in your private repository, even when your phone is off.'],
+    ['Home', 'Each tile is a room: current temperature, its mode and target. Orange tiles are heating right now. Tap a tile to change the mode or the comfort and eco temperatures. Changes take up to a minute to reach the unit; the app tells you when the unit confirmed.'],
+    ['Modes', 'Schedule = the room follows its weekly program. Comfort and Eco = fixed temperature you set below. Frost = only protects from freezing. Off = no heating. Schedule restores the program the room had before.'],
+    ['Sun control', 'Floor heating reacts slowly, so on a sunny day it keeps pumping heat while the sun is already warming the room through the windows. Tell the app where each room\'s windows face and how big they are. Every hour the robot checks the forecast and works out when the sun will really heat each room.'],
+    ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If clouds come at 12:00, it switches back at 13:00. If you change the room by hand, the robot leaves it alone that day.'],
+    ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
+    ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
+    ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Nothing gets damaged: eco only means a cooler room.']
+  ],
+  cs: [
+    ['Co to je', 'Dálkové ovládání podlahového topení Fenix a robot, který každou hodinu kontroluje počasí. Robot běží na GitHubu ve tvém soukromém repozitáři, i když máš vypnutý telefon.'],
+    ['Domů', 'Každá dlaždice je jedna místnost: aktuální teplota, režim a cílová teplota. Oranžové dlaždice právě topí. Klepnutím na dlaždici změníš režim nebo teplotu komfortu a útlumu. Změna se do jednotky dostane až za minutu, aplikace ukáže, až ji jednotka potvrdí.'],
+    ['Režimy', 'Program = místnost jede podle týdenního programu. Komfort a Útlum = pevná teplota, kterou nastavíš níž. Nezámrz = jen ochrana proti zamrznutí. Vypnuto = netopí. Program vrátí místnost do programu, který měla předtím.'],
+    ['Řízení podle slunce', 'Podlahové topení reaguje pomalu, takže za slunečného dne dál topí, i když místnost už ohřívá slunce okny. Řekni aplikaci, kam okna v každé místnosti míří a jak jsou velká. Robot každou hodinu projde předpověď a spočítá, kdy slunce každou místnost opravdu ohřeje.'],
+    ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když ve 12:00 přijdou mraky, vrátí ji ve 13:00. Když místnost přepneš ručně, robot ji ten den nechá být.'],
+    ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
+    ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
+    ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Nic se nepokazí: útlum znamená jen chladnější místnost.']
+  ]
+}
+
 const MODES = [
-  { key: 'program', label: 'Schedule', icon: 'clock', color: 'var(--sched)' },
-  { key: 'comfort', code: '0', label: 'Comfort', icon: 'sun', color: 'var(--heat)', sp: 'consigne_confort' },
-  { key: 'eco', code: '3', label: 'Eco', icon: 'leaf', color: 'var(--eco)', sp: 'consigne_eco' },
-  { key: 'frost', code: '2', label: 'Frost', icon: 'snow', color: 'var(--frost)', sp: 'consigne_hg' },
-  { key: 'boost', code: '4', label: 'Boost', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' },
-  { key: 'off', code: '1', label: 'Off', icon: 'power', color: 'var(--off)' }
+  { key: 'program', icon: 'clock', color: 'var(--sched)' },
+  { key: 'comfort', code: '0', icon: 'sun', color: 'var(--heat)', sp: 'consigne_confort' },
+  { key: 'eco', code: '3', icon: 'leaf', color: 'var(--eco)', sp: 'consigne_eco' },
+  { key: 'frost', code: '2', icon: 'snow', color: 'var(--frost)', sp: 'consigne_hg' },
+  { key: 'boost', code: '4', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' },
+  { key: 'off', code: '1', icon: 'power', color: 'var(--off)' }
 ]
-const METRICS = { tmax: ['Max temperature', '°C'], tmin: ['Min temperature', '°C'], sunshine: ['Sunshine', 'h'] }
-const FACADES = [['South', 0], ['South-southeast', -22], ['Southeast', -45], ['East-southeast', -67], ['East', -90], ['East-northeast', -112], ['Northeast', -135], ['North-northeast', -157], ['North', 180], ['North-northwest', 157], ['Northwest', 135], ['West-northwest', 112], ['West', 90], ['West-southwest', 67], ['Southwest', 45], ['South-southwest', 22]]
+const METRICS = { tmax: '°C', tmin: '°C', sunshine: 'h' }
+const FACADES = [0, -22, -45, -67, -90, -112, -135, -157, 180, 157, 135, 112, 90, 67, 45, 22]
 
 const store = {
   get () { try { return JSON.parse(localStorage.getItem('fenix') || '{}') } catch { return {} } },
   set (v) { try { localStorage.setItem('fenix', JSON.stringify({ ...store.get(), ...v })) } catch {} }
 }
+
+const lang = () => {
+  const l = store.get().lang
+  if (l === 'cs' || l === 'en') return l
+  return (navigator.language || '').toLowerCase().startsWith('cs') ? 'cs' : 'en'
+}
+const locale = () => lang() === 'cs' ? 'cs-CZ' : 'en-GB'
+function t (key, ...args) {
+  const v = TEXT[lang()][key] ?? TEXT.en[key] ?? key
+  return typeof v === 'function' ? v(...args) : v.replace(/\{(\d)\}/g, (_, i) => args[i])
+}
+const modeLabel = m => t('m_' + m.key)
+const facadeLabel = a => t('f_' + (a < 0 ? 'm' + -a : a))
+const num1 = v => v.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 const S = { tab: 'zones', token: null, home: null, zones: null, busy: {}, status: {}, draft: {}, config: null, configSha: null, state: null, forecast: null, outdoor: null, sheet: null, dirty: false, loading: false }
 
@@ -196,10 +318,10 @@ function h (tag, props = {}, ...kids) {
 const icon = (name, cls = '') => h('span', { class: cls, icon: name, style: 'display:inline-flex' })
 
 function toast (msg) {
-  const t = document.getElementById('toast')
-  t.replaceChildren(h('span', {}, msg))
+  const el = document.getElementById('toast')
+  el.replaceChildren(h('span', {}, msg))
   clearTimeout(toast.timer)
-  toast.timer = setTimeout(() => t.replaceChildren(), 2600)
+  toast.timer = setTimeout(() => el.replaceChildren(), 2600)
 }
 
 function act (fn) {
@@ -210,21 +332,21 @@ function act (fn) {
 
 const toC = raw => Math.round((Number(raw) - 320) / 18 * 10) / 10
 const toRaw = c => String(Math.round(c * 18 + 320))
-const fmt = c => (Math.round(c * 10) / 10).toFixed(1)
+const fmt = c => num1(Math.round(c * 10) / 10)
 const title = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase()
 
 async function login () {
   const { email, password } = store.get()
-  if (!email || !password) throw new Error('Sign in to Fenix first')
+  if (!email || !password) throw new Error(t('errSignInFirst'))
   const r = await fetch(`https://auth.${HOST}/realms/fenix/protocol/openid-connect/token`, {
     method: 'POST',
     body: new URLSearchParams({ grant_type: 'password', client_id: 'app-front', username: email, password })
   })
-  if (r.status === 401) throw new Error('Wrong email or password')
-  if (!r.ok) throw new Error(`Sign-in failed (${r.status})`)
+  if (r.status === 401) throw new Error(t('errWrongLogin'))
+  if (!r.ok) throw new Error(t('errSignIn', r.status))
   S.token = (await r.json()).access_token
   const u = await api('human/user/read/', { email })
-  if (!u.smarthomes?.length) throw new Error('This account has no home')
+  if (!u.smarthomes?.length) throw new Error(t('errNoHome'))
   const home = u.smarthomes[0]
   S.home = { id: home.smarthome_id, lat: Number(home.latitude), lon: Number(home.longitude) }
 }
@@ -236,7 +358,7 @@ async function api (endpoint, form, ok = [1, 8], retry = true) {
     body: new URLSearchParams(form)
   })
   if (r.status === 401 && retry) { await login(); return api(endpoint, form, ok, false) }
-  if (!r.ok) throw new Error(`Fenix error ${r.status}`)
+  if (!r.ok) throw new Error(t('errFenix', r.status))
   const j = await r.json()
   if (!ok.includes(Number(j.code?.code))) throw new Error(`Fenix: ${j.code?.value || j.code?.key}`)
   return j.data
@@ -263,15 +385,15 @@ async function write (label, params, field, want, statusText) {
   render()
   try {
     await api('human/query/push/', form, [8])
-    S.status[label] = 'Waiting for the unit to confirm…'
+    S.status[label] = t('waitingUnit')
     render()
     for (let i = 0; i < 12; i++) {
       await new Promise(r => setTimeout(r, 5000))
       await loadZones()
       const cur = S.zones.find(z => z.label === label)
-      if (String(cur?.d[field]) === want) { S.status[label] = 'Saved'; return }
+      if (String(cur?.d[field]) === want) { S.status[label] = t('saved'); return }
     }
-    S.status[label] = 'Sent, the unit has not confirmed yet'
+    S.status[label] = t('notConfirmed')
   } catch (e) {
     S.status[label] = ''
     throw e
@@ -285,7 +407,7 @@ async function write (label, params, field, want, statusText) {
 const setMode = (label, m) => act(() => {
   const z = S.zones.find(z => z.label === label)
   const code = m.key === 'program' ? scheduleCode(z) : m.code
-  return write(label, { gv_mode: code, nv_mode: code }, 'gv_mode', code, `Switching to ${m.label}…`)
+  return write(label, { gv_mode: code, nv_mode: code }, 'gv_mode', code, t('switchingTo', modeLabel(m)))
 })()
 
 const stepTimers = {}
@@ -299,12 +421,12 @@ function step (label, field, delta) {
   S.status[label] = ''
   render()
   clearTimeout(stepTimers[label + field])
-  stepTimers[label + field] = setTimeout(act(() => write(label, { [field]: toRaw(next) }, field, toRaw(next), 'Saving…')), 1200)
+  stepTimers[label + field] = setTimeout(act(() => write(label, { [field]: toRaw(next) }, field, toRaw(next), t('saving'))), 1200)
 }
 
 async function gh (path, opts = {}) {
   const { repo, ghToken } = store.get()
-  if (!repo || !ghToken) throw new Error('Connect GitHub first')
+  if (!repo || !ghToken) throw new Error(t('errGhFirst'))
   return fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
     ...opts,
     headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/vnd.github+json', ...opts.headers }
@@ -316,8 +438,8 @@ const b64encode = s => btoa(Array.from(new TextEncoder().encode(s), b => String.
 async function ghRead (path) {
   const r = await gh(path)
   if (r.status === 404) return { data: null, sha: null }
-  if (r.status === 401) throw new Error('GitHub token is invalid or expired')
-  if (!r.ok) throw new Error(`GitHub ${r.status}`)
+  if (r.status === 401) throw new Error(t('errGhToken'))
+  if (!r.ok) throw new Error(t('errGh', r.status))
   const j = await r.json()
   return { data: JSON.parse(b64decode(j.content)), sha: j.sha }
 }
@@ -329,24 +451,27 @@ async function loadConfig () {
   S.config.rules = S.config.rules.filter(r => METRICS[r.metric])
   S.configSha = sha
   S.state = (await ghRead('data/state.json')).data
+  if (S.config.lang !== lang()) { setDirty(true); return }
   setDirty(false)
 }
 
 async function saveConfig () {
+  S.config.lang = lang()
   const body = { message: 'config: update from web app', content: b64encode(JSON.stringify(S.config, null, 2) + '\n') }
   if (S.configSha) body.sha = S.configSha
   const r = await gh('config.json', { method: 'PUT', body: JSON.stringify(body) })
-  if (r.status === 409) throw new Error('Changed elsewhere, pull to refresh')
-  if (!r.ok) throw new Error(`Save failed (${r.status})`)
+  if (r.status === 409) throw new Error(t('errConflict'))
+  if (!r.ok) throw new Error(t('errSave', r.status))
   S.configSha = (await r.json()).content.sha
   setDirty(false)
-  toast('Saved · applies at the next hourly check')
+  toast(t('savedToast'))
   await act(loadForecast)()
 }
 
 function setDirty (v) {
   S.dirty = v
   document.getElementById('savebar').classList.toggle('show', v)
+  document.body.classList.toggle('dirty', v)
 }
 
 const randomTopic = () => 'heating-' + Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('')
@@ -357,7 +482,7 @@ async function loadForecast () {
   const base = { latitude: c.lat ?? S.home.lat, longitude: c.lon ?? S.home.lon, timezone: 'auto', forecast_days: 2 }
   const get = async extra => {
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?${new URLSearchParams({ ...base, ...extra })}`)
-    if (!r.ok) throw new Error(`Forecast unavailable (${r.status})`)
+    if (!r.ok) throw new Error(t('errForecast', r.status))
     return r.json()
   }
   const azimuths = [...new Set(Object.values(c.rooms || {}).flatMap(r => r.windows || []).map(w => w.azimuth))]
@@ -367,7 +492,7 @@ async function loadForecast () {
   ])
   S.gti = {}
   azimuths.forEach((az, k) => {
-    S.gti[az] = Object.fromEntries(hourly[k].hourly.time.map((t, i) => [t, hourly[k].hourly.global_tilted_irradiance[i] || 0]))
+    S.gti[az] = Object.fromEntries(hourly[k].hourly.time.map((tm, i) => [tm, hourly[k].hourly.global_tilted_irradiance[i] || 0]))
   })
   S.outdoor = j.current?.temperature_2m
   S.forecast = j.daily.time.map((date, i) => ({
@@ -385,13 +510,17 @@ function sunWindow (label, date) {
   const sc = sunCfg()
   let first = -1; let last = -1
   for (let hr = 0; hr < 24; hr++) {
-    const t = `${date}T${String(hr).padStart(2, '0')}:00`
-    const gain = room.windows.reduce((sum, w) => sum + w.width * w.height * Math.max(w.count || 1, 1) * (S.gti[w.azimuth]?.[t] || 0) * 0.6, 0)
+    const tm = `${date}T${String(hr).padStart(2, '0')}:00`
+    const gain = room.windows.reduce((sum, w) => sum + w.width * w.height * Math.max(w.count || 1, 1) * (S.gti[w.azimuth]?.[tm] || 0) * 0.6, 0)
     if (gain >= sc.share / 100 * power) { if (first < 0) first = hr; last = hr }
   }
   return first < 0 ? null : { start: Math.max(0, first - sc.lead_hours), sunStart: first, sunEnd: last + 1 }
 }
 const hh = n => `${String(n).padStart(2, '0')}:00`
+const planText = (label, d, i) => {
+  const w = sunWindow(label, d.date)
+  return `${t(i ? 'tomorrow' : 'today')}: ${w ? t('sunPlan', hh(w.sunStart), hh(w.sunEnd), hh(w.start)) : t('notEnoughSun')}`
+}
 
 async function refresh () {
   S.loading = true
@@ -415,7 +544,9 @@ function closeSheet () { S.sheet = null; render() }
 function header (titleText, sub, withRefresh) {
   return h('div', { class: 'hdr' },
     h('div', {}, h('h1', {}, titleText), sub ? h('div', { class: 'sub' }, sub) : null),
-    withRefresh ? h('button', { class: 'icon-btn' + (S.loading ? ' spin' : ''), 'aria-label': 'Refresh', onclick: refresh }, icon('refresh')) : null)
+    h('div', { style: 'display:flex;gap:8px' },
+      h('button', { class: 'icon-btn', 'aria-label': t('help'), onclick: () => openSheet({ type: 'help' }) }, icon('help')),
+      withRefresh ? h('button', { class: 'icon-btn' + (S.loading ? ' spin' : ''), 'aria-label': t('refresh'), onclick: refresh }, icon('refresh')) : null))
 }
 
 function zoneTile (z) {
@@ -427,21 +558,22 @@ function zoneTile (z) {
     h('div', { class: 'name' }, title(z.label)),
     S.busy[z.label] ? h('span', { class: 'pending' }) : heating ? icon('flame', 'flame') : null,
     h('div', { class: 'temp' }, fmt(toC(d.temperature_air)), h('sup', {}, '°')),
-    h('div', { class: 'meta' }, h('span', { class: 'dot', style: `background:${m.color}` }), m.label, target ? ` · ${target}` : null)
+    h('div', { class: 'meta' }, h('span', { class: 'dot', style: `background:${m.color}` }), modeLabel(m), target ? ` · ${target}` : null)
   )
 }
 
 function zonesView () {
   const s = store.get()
   if (!s.email) {
-    return [header('Heating'), h('div', { class: 'empty' }, icon('flame'), h('h2', {}, 'Welcome'), h('p', {}, 'Sign in with your Fenix account to control your floor heating.'),
-      h('button', { class: 'btn', onclick: () => openSheet({ type: 'login' }) }, 'Sign in'))]
+    return [header(t('appName')), h('div', { class: 'empty' }, icon('flame'), h('h2', {}, t('welcome')), h('p', {}, t('welcomeText')),
+      h('button', { class: 'btn', onclick: () => openSheet({ type: 'login' }) }, t('signIn')),
+      h('div', { style: 'margin-top:12px' }, h('button', { class: 'btn secondary', onclick: () => openSheet({ type: 'help' }) }, t('howItWorks'))))]
   }
   const zones = S.zones
   const heatingCount = zones?.filter(z => String(z.d.heating_up) === '1').length
-  const sub = zones ? [S.outdoor != null ? `Outside ${fmt(S.outdoor)}°` : null, heatingCount ? `${heatingCount} heating` : 'Nothing heating'].filter(Boolean).join(' · ') : 'Loading…'
+  const sub = zones ? [S.outdoor != null ? t('outside', fmt(S.outdoor)) : null, heatingCount ? t('nHeating', heatingCount) : t('nothingHeating')].filter(Boolean).join(' · ') : t('loading')
   return [
-    header('Heating', sub, true),
+    header(t('appName'), sub, true),
     checkCard(),
     h('div', { class: 'tiles' }, zones ? zones.map(zoneTile) : [1, 2, 3, 4].map(() => h('div', { class: 'skel' })))
   ]
@@ -451,13 +583,13 @@ function checkCard () {
   const last = S.state?.last_run && new Date(S.state.last_run)
   if (!S.config || !last) return null
   const ago = (Date.now() - last) / 36e5
-  const at = last.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-  if (ago < 2) return h('div', { class: 'note', style: 'margin:-10px 4px 14px' }, `Hourly check ran at ${at}`)
+  const at = last.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
+  if (ago < 2) return h('div', { class: 'note', style: 'margin:-10px 4px 14px' }, t('checkRan', at))
   const sunOn = Object.entries(S.state.sun || {}).filter(([, s]) => s.applied && !s.done).map(([l]) => title(l))
   return h('div', { class: 'warn' },
-    h('b', {}, `No hourly check for ${ago < 48 ? `${Math.floor(ago)} h` : `${Math.floor(ago / 24)} days`}`),
-    h('div', {}, `Last one ran ${last.toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}. Check the GitHub Actions page of your repository.`),
-    sunOn.length ? h('div', {}, `Still on eco from sun control: ${sunOn.join(', ')}. Switch them back by hand if needed.`) : null)
+    h('b', {}, ago < 48 ? t('noCheckH', Math.floor(ago)) : t('noCheckD', Math.floor(ago / 24))),
+    h('div', {}, t('lastRan', last.toLocaleString(locale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }))),
+    sunOn.length ? h('div', {}, t('stillEco', sunOn.join(', '))) : null)
 }
 
 function zoneSheet (label) {
@@ -467,26 +599,27 @@ function zoneSheet (label) {
   const m = zoneMode(z)
   const heating = String(d.heating_up) === '1'
   const lo = toC(d.min_set_point); const hi = toC(d.max_set_point)
-  const sp = (name, field) => {
+  const sp = (mode, field) => {
+    const name = modeLabel(mode)
     const v = S.draft[label]?.[field] ?? toC(d[field])
     return h('div', { class: 'row' }, h('span', { class: 'label' }, name),
       h('div', { class: 'stepper' },
-        h('button', { 'aria-label': `Lower ${name}`, disabled: v <= lo, onclick: () => step(label, field, -0.5) }, '−'),
+        h('button', { 'aria-label': t('lower', name), disabled: v <= lo, onclick: () => step(label, field, -0.5) }, '−'),
         h('span', { class: 'v' }, `${fmt(v)}°`),
-        h('button', { 'aria-label': `Raise ${name}`, disabled: v >= hi, onclick: () => step(label, field, 0.5) }, '+')))
+        h('button', { 'aria-label': t('raise', name), disabled: v >= hi, onclick: () => step(label, field, 0.5) }, '+')))
   }
   return [
-    h('div', { class: 'sheet-hdr' }, h('h2', {}, title(label)), h('button', { class: 'done', onclick: closeSheet }, 'Done')),
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, title(label)), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
     h('div', { class: 'hero' },
       h('div', { class: 'temp' }, fmt(toC(d.temperature_air)), h('sup', {}, '°')),
-      h('div', { class: 'state' + (heating ? ' heating' : '') }, h('b', {}, heating ? 'Heating' : 'Idle'), `${m.label}${m.sp ? ` · target ${fmt(toC(d[m.sp]))}°` : ''}`)),
+      h('div', { class: 'state' + (heating ? ' heating' : '') }, h('b', {}, t(heating ? 'heating' : 'idle')), `${modeLabel(m)}${m.sp ? ' · ' + t('target', fmt(toC(d[m.sp]))) : ''}`)),
     h('div', { class: 'modes' }, MODES.map(mm => h('button', {
       class: 'mode' + (mm === m ? ' on' : ''),
       style: mm === m ? `background:${mm.color}` : `color:${mm.color}`,
       onclick: () => mm !== m && setMode(label, mm)
-    }, icon(mm.icon), h('span', { style: mm === m ? '' : 'color:var(--fg)' }, mm.label)))),
-    h('div', { class: 'section' }, 'Temperatures'),
-    h('div', { class: 'group' }, sp('Comfort', 'consigne_confort'), sp('Eco', 'consigne_eco')),
+    }, icon(mm.icon), h('span', { style: mm === m ? '' : 'color:var(--fg)' }, modeLabel(mm))))),
+    h('div', { class: 'section' }, t('temperatures')),
+    h('div', { class: 'group' }, sp(MODES[1], 'consigne_confort'), sp(MODES[2], 'consigne_eco')),
     h('div', { class: 'status' }, S.status[label] || '')
   ]
 }
@@ -494,8 +627,7 @@ function zoneSheet (label) {
 const wxIcon = d => d.sunshine >= 6 ? h('span', { icon: 'sun', style: 'color:#ffb020;display:inline-flex' }) : d.sunshine >= 2 ? h('span', { icon: 'partly', style: 'display:inline-flex' }) : h('span', { icon: 'cloud', style: 'color:#b8c2cf;display:inline-flex' })
 
 function ruleText (r) {
-  const [name, unit] = METRICS[r.metric]
-  return `${r.day === 'today' ? 'Today' : 'Tomorrow'} · ${name.toLowerCase()} ${r.op === '>' ? 'above' : 'below'} ${r.value} ${unit}`
+  return `${t(r.day)} · ${t('met_' + r.metric).toLowerCase()} ${t(r.op === '>' ? 'above' : 'below')} ${String(r.value).replace('.', lang() === 'cs' ? ',' : '.')} ${METRICS[r.metric]}`
 }
 const ruleHits = r => {
   if (!S.forecast) return false
@@ -506,43 +638,41 @@ const ruleHits = r => {
 function sunPlanRow (label) {
   const room = S.config.rooms[label]
   const f = S.forecast
-  const plan = f ? f.map((d, i) => {
-    const w = sunWindow(label, d.date)
-    return `${i ? 'Tomorrow' : 'Today'}: ${w ? `sun ${hh(w.sunStart)}–${hh(w.sunEnd)}, eco from ${hh(w.start)}` : 'not enough sun'}`
-  }).join(' · ') : '…'
+  const plan = f ? f.map((d, i) => planText(label, d, i)).join(' · ') : '…'
   const active = S.state?.sun?.[label]
   const on = active && active.date === f?.[0]?.date && active.applied && !active.done
   return h('button', { class: 'row', onclick: () => openSheet({ type: 'room', label }) },
-    h('div', { class: 'two' }, h('span', {}, title(label)), h('small', {}, room.sun ? plan : 'Sun control off')),
-    on ? h('span', { class: 'badge on' }, 'Eco now') : null, icon('chev', 'chev'))
+    h('div', { class: 'two' }, h('span', {}, title(label)), h('small', {}, room.sun ? plan : t('sunOff'))),
+    on ? h('span', { class: 'badge on' }, t('ecoNow')) : null, icon('chev', 'chev'))
 }
 
 function forecastView () {
   const f = S.forecast
   const rules = S.config?.rules || []
   const sunRooms = Object.keys(S.config?.rooms || {}).filter(l => S.config.rooms[l].windows?.length).sort()
+  const sc = sunCfg()
   return [
-    header('Forecast', S.config ? (S.config.auto_adjust ? 'Automatic sun control on' : 'Notifications only') : 'Loading…', true),
+    header(t('forecast'), S.config ? t(S.config.auto_adjust ? 'autoOnSub' : 'notifyOnlySub') : t('loading'), true),
     h('div', { class: 'days' }, (f || [null, null]).map((d, i) => d
       ? h('div', { class: 'day' },
-        h('div', { class: 'when' }, i ? 'Tomorrow' : 'Today'),
-        h('div', { class: 'date' }, new Date(d.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })),
+        h('div', { class: 'when' }, t(i ? 'tomorrow' : 'today')),
+        h('div', { class: 'date' }, new Date(d.date + 'T12:00').toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'short' })),
         h('div', { class: 'wx' }, wxIcon(d), h('div', { class: 't' }, `${Math.round(d.tmax)}°`, h('small', {}, `${Math.round(d.tmin)}°`))),
-        h('div', { class: 'm' }, 'Sunshine', h('b', {}, `${d.sunshine.toFixed(1)} h`)))
+        h('div', { class: 'm' }, t('sunshine'), h('b', {}, `${num1(d.sunshine)} h`)))
       : h('div', { class: 'skel' }))),
     S.config ? [
-      h('div', { class: 'section' }, 'Sun in your rooms'),
+      h('div', { class: 'section' }, t('sunInRooms')),
       sunRooms.length
         ? h('div', { class: 'group' }, sunRooms.map(sunPlanRow))
-        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, 'Add windows to your rooms')),
-      h('div', { class: 'note' }, `A room is sunny when sun through its windows covers ${sunCfg().share}% of its heater power. Eco starts ${sunCfg().lead_hours} h before the sun so the floor cools in time.`),
-      h('div', { class: 'section' }, 'Your rules'),
+        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, t('addWindows'))),
+      h('div', { class: 'note' }, t('sunNote', sc.share, sc.lead_hours)),
+      h('div', { class: 'section' }, t('yourRules')),
       rules.length
         ? h('div', { class: 'group' }, rules.map(r => h('div', { class: 'row' },
-          h('div', { class: 'two' }, h('span', {}, r.message || 'Untitled rule'), h('small', {}, ruleText(r))),
-          h('span', { class: 'badge' + (ruleHits(r) ? ' on' : '') }, ruleHits(r) ? 'Fires' : 'Quiet'))))
-        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, 'Add a rule'))
-    ] : h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, 'Connect GitHub to use sun control and rules'))
+          h('div', { class: 'two' }, h('span', {}, r.message || t('untitled')), h('small', {}, ruleText(r))),
+          h('span', { class: 'badge' + (ruleHits(r) ? ' on' : '') }, t(ruleHits(r) ? 'fires' : 'quiet')))))
+        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, t('addARule')))
+    ] : h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, t('connectGhForSun')))
   ]
 }
 
@@ -554,7 +684,7 @@ function numStepper (value, stepBy, lo, hi, set, unit = '') {
   const apply = d => { set(Math.min(hi, Math.max(lo, Math.round((value + d) * 10) / 10))); setDirty(true); render() }
   return h('div', { class: 'stepper' },
     h('button', { disabled: value <= lo, onclick: () => apply(-stepBy) }, '−'),
-    h('span', { class: 'v', style: 'min-width:60px;font-size:17px' }, `${value}${unit}`),
+    h('span', { class: 'v', style: 'min-width:60px;font-size:17px' }, `${String(value).replace('.', lang() === 'cs' ? ',' : '.')}${unit}`),
     h('button', { disabled: value >= hi, onclick: () => apply(stepBy) }, '+'))
 }
 
@@ -563,60 +693,71 @@ function settingsView () {
   const c = S.config
   const change = fn => e => { fn(e); setDirty(true) }
   return [
-    header('Settings'),
-    h('div', { class: 'section' }, 'Accounts'),
+    header(t('settings')),
     h('div', { class: 'group' },
-      navRow('Fenix', s.email || 'Not signed in', () => openSheet({ type: 'login' })),
-      navRow('GitHub', s.repo || 'Not connected', () => openSheet({ type: 'github' }))),
-    h('div', { class: 'note' }, 'GitHub stores your settings in your private repository, where the hourly check reads them.'),
+      navRow(t('howItWorks'), null, () => openSheet({ type: 'help' })),
+      h('label', { class: 'row' }, h('span', { class: 'label' }, t('language')),
+        h('select', {
+          onchange: e => {
+            store.set({ lang: e.target.value })
+            document.documentElement.lang = lang()
+            if (S.config && S.config.lang !== lang()) setDirty(true)
+            render()
+          }
+        }, [['auto', t('langAuto')], ['cs', 'Čeština'], ['en', 'English']].map(([v, l]) => h('option', { value: v, selected: (s.lang || 'auto') === v }, l))))),
+    h('div', { class: 'section' }, t('accounts')),
+    h('div', { class: 'group' },
+      navRow('Fenix', s.email || t('notSignedIn'), () => openSheet({ type: 'login' })),
+      navRow('GitHub', s.repo || t('notConnected'), () => openSheet({ type: 'github' }))),
+    h('div', { class: 'note' }, t('ghNote')),
     c ? [
-      h('div', { class: 'section' }, 'Rooms & windows'),
+      h('div', { class: 'section' }, t('roomsWindows')),
       h('div', { class: 'group' },
         S.zones
           ? S.zones.map(z => {
             const room = c.rooms[z.label]
             const n = (room?.windows || []).reduce((sum, w) => sum + Math.max(w.count || 1, 1), 0)
-            return navRow(title(z.label), n ? `${n} window${n > 1 ? 's' : ''}${room.sun ? '' : ' · sun off'}` : 'No windows', () => openSheet({ type: 'room', label: z.label }))
+            return navRow(title(z.label), n ? `${t('nWindows', n)}${room.sun ? '' : ' · ' + t('sunOffShort')}` : t('noWindows'), () => openSheet({ type: 'room', label: z.label }))
           })
-          : h('div', { class: 'row' }, h('span', { class: 'value' }, 'Sign in to Fenix to list rooms'))),
-      h('div', { class: 'note' }, 'Add each room\'s windows so the app knows how much sun reaches it.'),
-      h('div', { class: 'section' }, 'Sun control'),
+          : h('div', { class: 'row' }, h('span', { class: 'value' }, t('signInToList')))),
+      h('div', { class: 'note' }, t('roomsNote')),
+      h('div', { class: 'section' }, t('sunControl')),
       h('div', { class: 'group' },
-        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Switch rooms to eco automatically'),
+        h('label', { class: 'row' }, h('span', { class: 'label' }, t('autoSwitch')),
           h('input', { type: 'checkbox', class: 'switch', checked: c.auto_adjust, onchange: change(e => { c.auto_adjust = e.target.checked }) })),
-        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Sunny when sun covers'), h('small', {}, 'of the room\'s heater power')),
-          numStepper(c.sun.share, 10, 10, 100, v => { c.sun.share = v }, '%')),
-        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Start eco earlier'), h('small', {}, 'the floor needs time to cool')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, t('sunnyWhen')), h('small', {}, t('ofHeater'))),
+          numStepper(c.sun.share, 10, 10, 100, v => { c.sun.share = v }, ' %')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, t('startEarlier')), h('small', {}, t('floorCool'))),
           numStepper(c.sun.lead_hours, 1, 0, 8, v => { c.sun.lead_hours = v }, ' h')),
-        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Tomorrow\'s heads-up'), h('small', {}, 'evening notification')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, t('headsUp')), h('small', {}, t('eveningNote'))),
           numStepper(c.sun.heads_up_hour, 1, 12, 23, v => { c.sun.heads_up_hour = v }, ':00')),
-        navRow('Location', c.lat != null ? `${c.lat}, ${c.lon}` : 'Fenix home', () => openSheet({ type: 'location' }))),
-      h('div', { class: 'note' }, 'When on, sunny rooms switch to eco before the sun arrives and go back to their normal mode when it is gone or clouds come. A room you change by hand is left alone for the rest of the day. When off, you only get the evening heads-up.'),
-      h('div', { class: 'section' }, 'Notifications'),
+        navRow(t('location'), c.lat != null ? `${c.lat}, ${c.lon}` : t('fenixHome'), () => openSheet({ type: 'location' }))),
+      h('div', { class: 'note' }, t('sunControlNote')),
+      h('div', { class: 'section' }, t('notifications')),
       h('div', { class: 'group' },
-        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'ntfy topic'), h('small', { style: 'user-select:all;-webkit-user-select:all' }, c.ntfy_topic))),
-        h('button', { class: 'row action', onclick: act(async () => { await navigator.clipboard.writeText(c.ntfy_topic); toast('Topic copied') }) }, 'Copy topic'),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, t('ntfyTopic')), h('small', { style: 'user-select:all;-webkit-user-select:all' }, c.ntfy_topic))),
+        h('button', { class: 'row action', onclick: act(async () => { await navigator.clipboard.writeText(c.ntfy_topic); toast(t('topicCopied')) }) }, t('copyTopic')),
         h('button', {
           class: 'row action',
           onclick: act(async () => {
-            const r = await fetch(`https://ntfy.sh/${encodeURIComponent(c.ntfy_topic)}`, { method: 'POST', body: 'Notifications work 👍', headers: { Title: 'Heating' } })
-            toast(r.ok ? 'Test sent' : `ntfy error ${r.status}`)
+            const r = await fetch(`https://ntfy.sh/${encodeURIComponent(c.ntfy_topic)}?${new URLSearchParams({ title: t('appName') })}`, { method: 'POST', body: t('testBody') })
+            toast(r.ok ? t('testSent') : t('ntfyErr', r.status))
           })
-        }, 'Send test notification')),
-      h('div', { class: 'note' }, 'Install the free ntfy app and subscribe to this topic. Anyone who knows the topic can read it, so keep it private.'),
-      h('div', { class: 'section' }, 'Weather rules'),
+        }, t('sendTest'))),
+      h('div', { class: 'note' }, t('ntfyNote')),
+      h('div', { class: 'section' }, t('weatherRules')),
       h('div', { class: 'group' },
         c.rules.map((r, i) => h('button', { class: 'row', onclick: () => openSheet({ type: 'rule', index: i }) },
-          h('div', { class: 'two' }, h('span', {}, r.message || 'Untitled rule'), h('small', {}, ruleText(r))), icon('chev', 'chev'))),
+          h('div', { class: 'two' }, h('span', {}, r.message || t('untitled')), h('small', {}, ruleText(r))), icon('chev', 'chev'))),
         h('button', {
           class: 'row action',
           onclick: () => {
-            c.rules.push({ id: 'r' + Date.now().toString(36), day: 'tomorrow', metric: 'tmin', op: '<', value: 0, message: 'Frost tomorrow' })
+            c.rules.push({ id: 'r' + Date.now().toString(36), day: 'tomorrow', metric: 'tmin', op: '<', value: 0, message: t('newRuleMsg') })
             setDirty(true)
             openSheet({ type: 'rule', index: c.rules.length - 1 })
           }
-        }, 'Add rule')),
-      h('div', { class: 'note' }, 'Rules only send a notification, once per day.')
+        }, t('addRule'))),
+      h('div', { class: 'note' }, t('rulesNote'))
     ] : null
   ]
 }
@@ -630,22 +771,22 @@ function ruleSheet (index) {
   const r = c.rules[index]
   if (!r) return null
   const upd = fn => { fn(); setDirty(true); render() }
-  const [, unit] = METRICS[r.metric]
+  const unit = METRICS[r.metric]
   return [
-    h('div', { class: 'sheet-hdr' }, h('h2', {}, 'Rule'), h('button', { class: 'done', onclick: closeSheet }, 'Done')),
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, t('rule')), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
     h('div', { class: 'group' },
-      h('label', { class: 'row' }, h('span', { class: 'label', style: 'flex:none' }, 'Message'),
-        h('input', { type: 'text', value: r.message || '', placeholder: 'Notification text', oninput: e => { r.message = e.target.value; setDirty(true) } }))),
-    h('div', { class: 'section' }, 'When'),
+      h('label', { class: 'row' }, h('span', { class: 'label', style: 'flex:none' }, t('message')),
+        h('input', { type: 'text', value: r.message || '', placeholder: t('notifText'), oninput: e => { r.message = e.target.value; setDirty(true) } }))),
+    h('div', { class: 'section' }, t('when')),
     h('div', { class: 'group' },
-      h('div', { class: 'row' }, seg([['today', 'Today'], ['tomorrow', 'Tomorrow']], r.day, v => upd(() => { r.day = v }))),
-      h('label', { class: 'row' }, h('span', { class: 'label' }, 'Measure'),
-        h('select', { onchange: e => upd(() => { r.metric = e.target.value }) }, Object.entries(METRICS).map(([k, [n]]) => h('option', { value: k, selected: r.metric === k }, n)))),
-      h('div', { class: 'row' }, seg([['>', 'Above'], ['<', 'Below']], r.op, v => upd(() => { r.op = v }))),
-      h('div', { class: 'row' }, h('span', { class: 'label' }, 'Threshold'), numStepper(r.value, 1, -30, 40, v => { r.value = v }, ` ${unit}`))),
-    S.forecast ? h('div', { class: 'note' }, `Now: ${S.forecast[r.day === 'today' ? 0 : 1][r.metric].toFixed(1)} ${unit} ${r.day} → ${ruleHits(r) ? 'would notify' : 'quiet'}`) : null,
+      h('div', { class: 'row' }, seg([['today', t('today')], ['tomorrow', t('tomorrow')]], r.day, v => upd(() => { r.day = v }))),
+      h('label', { class: 'row' }, h('span', { class: 'label' }, t('measure')),
+        h('select', { onchange: e => upd(() => { r.metric = e.target.value }) }, Object.keys(METRICS).map(k => h('option', { value: k, selected: r.metric === k }, t('met_' + k))))),
+      h('div', { class: 'row' }, seg([['>', t('aboveC')], ['<', t('belowC')]], r.op, v => upd(() => { r.op = v }))),
+      h('div', { class: 'row' }, h('span', { class: 'label' }, t('threshold')), numStepper(r.value, 1, -30, 40, v => { r.value = v }, ` ${unit}`))),
+    S.forecast ? h('div', { class: 'note' }, t('nowValue', num1(S.forecast[r.day === 'today' ? 0 : 1][r.metric]), unit, t(r.day).toLowerCase(), t(ruleHits(r) ? 'wouldNotify' : 'quiet').toLowerCase())) : null,
     h('div', { class: 'section' }, ''),
-    h('div', { class: 'group' }, h('button', { class: 'row danger', onclick: () => { c.rules.splice(index, 1); setDirty(true); closeSheet() } }, 'Delete rule'))
+    h('div', { class: 'group' }, h('button', { class: 'row danger', onclick: () => { c.rules.splice(index, 1); setDirty(true); closeSheet() } }, t('deleteRule')))
   ]
 }
 
@@ -662,41 +803,45 @@ function roomSheet (label) {
   const z = S.zones?.find(z => z.label === label)
   const power = Number(z?.d.puissance_app) || 0
   const num = (w, key, labelText) => h('label', { class: 'row' }, h('span', { class: 'label' }, labelText),
-    h('input', { type: 'number', inputMode: 'decimal', step: '0.1', min: '0.1', value: w[key], oninput: e => { const v = Number(e.target.value); if (v > 0) { w[key] = v; c.rooms[label] = room; setDirty(true) } } }),
+    h('input', { type: 'number', inputMode: 'decimal', step: '0.1', min: '0.1', value: w[key], oninput: e => { const v = Number(e.target.value.replace(',', '.')); if (v > 0) { w[key] = v; c.rooms[label] = room; setDirty(true) } } }),
     h('span', { class: 'value', style: 'flex:none' }, 'm'))
-  const plan = S.forecast?.map((d, i) => {
-    const w = sunWindow(label, d.date)
-    return `${i ? 'Tomorrow' : 'Today'}: ${w ? `sun ${hh(w.sunStart)}–${hh(w.sunEnd)}, eco from ${hh(w.start)}` : 'not enough sun'}`
-  })
+  const plan = S.forecast?.map((d, i) => planText(label, d, i))
   return [
-    h('div', { class: 'sheet-hdr' }, h('h2', {}, title(label)), h('button', { class: 'done', onclick: closeSheet }, 'Done')),
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, title(label)), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
     h('div', { class: 'group' },
-      h('label', { class: 'row' }, h('span', { class: 'label' }, 'Use sun for this room'),
+      h('label', { class: 'row' }, h('span', { class: 'label' }, t('useSun')),
         h('input', { type: 'checkbox', class: 'switch', checked: room.sun, onchange: e => upd(() => { room.sun = e.target.checked }) }))),
-    h('div', { class: 'note' }, power ? `Heater ${(power / 1000).toFixed(1)} kW.` : 'Heater power unknown.', room.windows.length && plan ? ' ' + plan.join(' · ') + '.' : ''),
+    h('div', { class: 'note' }, power ? t('heater', num1(power / 1000)) : t('heaterUnknown'), room.windows.length && plan ? ' ' + plan.join(' · ') + '.' : ''),
     room.windows.map((w, i) => [
-      h('div', { class: 'section' }, `Window ${i + 1}`),
+      h('div', { class: 'section' }, t('windowN', i + 1)),
       h('div', { class: 'group' },
-        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Faces'),
-          h('select', { onchange: e => upd(() => { w.azimuth = Number(e.target.value) }) }, FACADES.map(([n, a]) => h('option', { value: a, selected: w.azimuth === a }, n)))),
-        num(w, 'width', 'Width'),
-        num(w, 'height', 'Height'),
-        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'How many'), h('small', {}, 'identical windows')), numStepper(w.count || 1, 1, 1, 20, v => { w.count = v; c.rooms[label] = room })),
-        h('button', { class: 'row danger', onclick: () => upd(() => { room.windows.splice(i, 1) }) }, 'Remove window'))
+        h('label', { class: 'row' }, h('span', { class: 'label' }, t('faces')),
+          h('select', { onchange: e => upd(() => { w.azimuth = Number(e.target.value) }) }, FACADES.map(a => h('option', { value: a, selected: w.azimuth === a }, facadeLabel(a))))),
+        num(w, 'width', t('width')),
+        num(w, 'height', t('height')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, t('howMany')), h('small', {}, t('identical'))), numStepper(w.count || 1, 1, 1, 20, v => { w.count = v; c.rooms[label] = room })),
+        h('button', { class: 'row danger', onclick: () => upd(() => { room.windows.splice(i, 1) }) }, t('removeWindow')))
     ]),
     h('div', { class: 'section' }, ''),
     h('div', { class: 'group' }, h('button', {
       class: 'row action',
       onclick: () => upd(() => { room.windows.push({ ...(room.windows.at(-1) || { azimuth: -22, width: 1, height: 2.5 }), count: 1 }) })
-    }, 'Add window')),
-    h('div', { class: 'note' }, 'Measure the glass, not the frame. Floor-to-ceiling panel ≈ 1 × 2.5 m.')
+    }, t('addWindow'))),
+    h('div', { class: 'note' }, t('measureGlass'))
+  ]
+}
+
+function helpSheet () {
+  return [
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, t('howItWorks')), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
+    HELP[lang()].map(([head, body]) => h('div', { class: 'help' }, h('h3', {}, head), h('p', {}, body)))
   ]
 }
 
 function formSheet (titleText, fields, submitLabel, onsubmit, extra) {
   const inputs = {}
   return [
-    h('div', { class: 'sheet-hdr' }, h('h2', {}, titleText), h('button', { class: 'done', onclick: closeSheet }, 'Cancel')),
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, titleText), h('button', { class: 'done', onclick: closeSheet }, t('cancel'))),
     h('div', { class: 'group' }, fields.map(([key, label, type, placeholder, value]) =>
       h('label', { class: 'row' }, h('span', { class: 'label', style: 'flex:none' }, label),
         inputs[key] = h('input', { type, placeholder, value: value ?? '', autocomplete: type === 'password' ? 'current-password' : 'off', autocapitalize: 'off', spellcheck: false })))),
@@ -717,35 +862,36 @@ function sheetContent () {
   if (sh.type === 'zone') return zoneSheet(sh.label)
   if (sh.type === 'rule') return ruleSheet(sh.index)
   if (sh.type === 'room') return roomSheet(sh.label)
+  if (sh.type === 'help') return helpSheet()
   if (sh.type === 'login') {
-    return formSheet('Fenix account', [['email', 'Email', 'email', 'you@example.com', s.email], ['password', 'Password', 'password', 'Required', s.password]], 'Sign in', async v => {
+    return formSheet(t('fenixAccount'), [['email', t('email'), 'email', 'you@example.com', s.email], ['password', t('password'), 'password', t('required'), s.password]], t('signIn'), async v => {
       store.set(v)
       S.token = null
       await loadZones()
       closeSheet()
-      toast('Signed in')
+      toast(t('signedIn'))
       act(loadForecast)().then(render)
-    }, h('div', { class: 'note' }, 'Same login as the official Fenix app. Stored only on this device.'))
+    }, h('div', { class: 'note' }, t('fenixNote')))
   }
   if (sh.type === 'github') {
-    return formSheet('GitHub', [['repo', 'Repository', 'text', 'owner/name', s.repo], ['ghToken', 'Token', 'password', 'github_pat_…', s.ghToken]], 'Connect', async v => {
+    return formSheet('GitHub', [['repo', t('repository'), 'text', 'owner/name', s.repo], ['ghToken', t('token'), 'password', 'github_pat_…', s.ghToken]], t('connect'), async v => {
       store.set(v)
       await loadConfig()
       await act(loadForecast)()
       closeSheet()
-      toast('Connected')
-    }, h('div', { class: 'note' }, 'Your private repository with the hourly workflow. Use a fine-grained token limited to that repository with Contents: read and write.'))
+      toast(t('connected'))
+    }, h('div', { class: 'note' }, t('ghSheetNote')))
   }
   if (sh.type === 'location') {
     const c = S.config
-    return formSheet('Location', [['lat', 'Latitude', 'number', S.home ? String(S.home.lat) : 'Fenix home', c.lat], ['lon', 'Longitude', 'number', S.home ? String(S.home.lon) : 'Fenix home', c.lon]], 'Use these', async v => {
+    return formSheet(t('location'), [['lat', t('latitude'), 'number', S.home ? String(S.home.lat) : t('fenixHome'), c.lat], ['lon', t('longitude'), 'number', S.home ? String(S.home.lon) : t('fenixHome'), c.lon]], t('useThese'), async v => {
       c.lat = v.lat === '' ? null : Number(v.lat)
       c.lon = v.lon === '' ? null : Number(v.lon)
       setDirty(true)
       closeSheet()
       act(loadForecast)().then(render)
     }, h('div', {},
-      h('div', { class: 'note' }, 'Leave empty to use the location of your Fenix home.'),
+      h('div', { class: 'note' }, t('locNote')),
       h('div', { class: 'group', style: 'margin-top:16px' }, h('button', {
         class: 'row action',
         onclick: () => navigator.geolocation.getCurrentPosition(p => {
@@ -755,16 +901,18 @@ function sheetContent () {
           closeSheet()
           act(loadForecast)().then(render)
         }, e => toast(e.message))
-      }, 'Use my current location'))))
+      }, t('useMyLocation')))))
   }
 }
 
 function render () {
   const views = { zones: zonesView, forecast: forecastView, settings: settingsView }
   const y = scrollY
+  document.title = t('appName')
+  document.getElementById('savebtn').textContent = t('saveChanges')
   document.getElementById('app').replaceChildren(...[views[S.tab]()].flat(Infinity).filter(Boolean))
-  document.getElementById('nav').replaceChildren(...[['zones', 'Home', 'home'], ['forecast', 'Forecast', 'sun'], ['settings', 'Settings', 'gear']].map(([t, l, i]) =>
-    h('button', { class: S.tab === t ? 'on' : '', onclick: () => { S.tab = t; scrollTo(0, 0); render() } }, icon(i), l)))
+  document.getElementById('nav').replaceChildren(...[['zones', 'home', 'home'], ['forecast', 'forecast', 'sun'], ['settings', 'settings', 'gear']].map(([tab, l, i]) =>
+    h('button', { class: S.tab === tab ? 'on' : '', onclick: () => { S.tab = tab; scrollTo(0, 0); render() } }, icon(i), t(l))))
   const host = document.getElementById('sheet')
   const content = S.sheet && sheetContent()
   if (S.sheet && !content) S.sheet = null
@@ -776,12 +924,13 @@ function render () {
     if (active?.tagName === 'INPUT' && host.contains(active) && active.type !== 'checkbox') return scrollTo(0, y)
     const sheet = h('div', { class: 'sheet' }, h('div', { class: 'grab' }), content)
     host.replaceChildren(h('div', { class: 'scrim' + (S.sheet.enter ? ' enter' : ''), onclick: e => { if (e.target === e.currentTarget) closeSheet() } }, sheet))
-    sheet.scrollTop = prev
+    sheet.scrollTop = S.sheet.enter ? 0 : prev
     S.sheet.enter = false
   }
   scrollTo(0, y)
 }
 
+document.documentElement.lang = lang()
 document.getElementById('savebtn').addEventListener('click', async e => {
   e.target.disabled = true
   await act(saveConfig)()
