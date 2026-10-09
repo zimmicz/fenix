@@ -2,7 +2,7 @@
 
 Replacement for the Fenix V24 WiFi floor heating app, plus weather-forecast notifications.
 
-- **Web app**: https://zimmicz.github.io/fenix/ (open in Safari, Share → Add to Home Screen). Talks to the Fenix cloud directly from your phone; your login stays on the device.
+- **Web app**: https://www.zimmi.cz/fenix/ (open in Safari, Share → Add to Home Screen). Talks to the Fenix cloud directly from your phone; your login stays on the device.
 - **Hourly job** in your own private GitHub repo: logs zone temperatures to `data/log.csv`, checks the forecast, sends push notifications via [ntfy](https://ntfy.sh), and optionally switches zones to eco/frost on sunny or warm days (reverted the next day).
 
 ## Setup
