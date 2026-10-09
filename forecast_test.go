@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestFetchForecast(t *testing.T) {
@@ -159,6 +160,55 @@ func TestStaleRevert(t *testing.T) {
 	}
 	if unit.gv != "16" || len(sent) != 1 || st.Sun["OBYVAK"].Date != "2026-10-10" || st.Sun["OBYVAK"].Applied {
 		t.Fatalf("stale: gv=%s sent=%q st=%+v", unit.gv, sent, st.Sun["OBYVAK"])
+	}
+}
+
+func TestAway(t *testing.T) {
+	c, unit := fakeFenix(t)
+	unit.gv = "3"
+	until := "2026-10-11T16:00:00.000Z"
+	cfg := Config{AutoAdjust: true, Rooms: map[string]Room{"OBYVAK": obyvak}, Away: &Away{Until: until, Prev: map[string]map[string]string{"OBYVAK": {"gv_mode": "16", "nv_mode": "16"}}}}
+	var st State
+	var sent []string
+	sunny := map[string][]int{"2026-10-11": {10, 11, 12, 13, 14}}
+	run := func(at string) {
+		t.Helper()
+		sent = nil
+		now, _ := time.Parse(time.RFC3339, at)
+		fc := Forecast{Now: "2026-10-11T12:07", At: now, GTI: gti(sunny), Days: []Day{{Date: "2026-10-11"}, {Date: "2026-10-12"}}}
+		if err := step(c, cfg, &st, fc, func(m string) error { sent = append(sent, m); return nil }); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	unit.gv = "16"
+	run("2026-10-11T12:00:00Z")
+	if len(unit.pushed) != 0 || len(st.Sun) != 0 || st.Away != "" || len(sent) != 0 {
+		t.Fatalf("sun control must skip while away: pushed=%d sun=%v sent=%q", len(unit.pushed), st.Sun, sent)
+	}
+
+	sunny = nil
+	unit.gv = "3"
+	run("2026-10-11T12:59:00Z")
+	if len(unit.pushed) != 0 || st.Away != "" {
+		t.Fatalf("restored before warm-up: pushed=%d away=%q", len(unit.pushed), st.Away)
+	}
+	run("2026-10-11T13:00:00Z")
+	if unit.gv != "16" || unit.pushed[0].Get("query[nv_mode]") != "16" || st.Away != until || len(sent) != 1 || sent[0] != "Heating restored, welcome home" {
+		t.Fatalf("restore: gv=%s away=%q sent=%q", unit.gv, st.Away, sent)
+	}
+
+	unit.gv = "3"
+	run("2026-10-11T14:00:00Z")
+	if len(unit.pushed) != 1 || len(sent) != 0 {
+		t.Fatalf("double restore: pushed=%d sent=%q", len(unit.pushed), sent)
+	}
+
+	st = State{}
+	unit.gv = "0"
+	run("2026-10-11T13:00:00Z")
+	if len(unit.pushed) != 1 || unit.gv != "0" || st.Away != until {
+		t.Fatalf("hand change must be kept: gv=%s pushed=%d away=%q", unit.gv, len(unit.pushed), st.Away)
 	}
 }
 

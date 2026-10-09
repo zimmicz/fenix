@@ -29,6 +29,10 @@ An hour is **sunny** for a room when the gain is at least *share* (default 50 %)
 
 With *Switch rooms to eco automatically* off you only get the evening heads-up (default 18:00): "Tomorrow: Obyvak sun 10–15 h, eco from 07 h".
 
+## Away
+
+Home → Away: every room goes to eco now and the app stores `away: {until, prev}` (each room's raw `gv_mode`/`nv_mode`) in `config.json`. The hourly robot puts rooms still on eco back to `prev` `away_warmup_hours` (default: sun lead hours) before `until`, records `away_restored` in `data/state.json` and sends a notification. Rooms changed by hand are left alone; sun control pauses while away. Back now in the app restores immediately.
+
 ## Weather rules
 
 Notify-only, once per day: day (today/tomorrow), `tmax`/`tmin` (°C) or `sunshine` (hours), above/below a value.
