@@ -98,7 +98,7 @@ input,select,textarea{font:inherit;color:inherit}
 
 .warn{background:rgba(255,59,48,.12);color:var(--fg);border-radius:16px;padding:12px 16px;margin:-6px 0 14px;font-size:15px;display:flex;flex-direction:column;gap:4px}.warn b{color:var(--red)}
 .help{background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.help h3{margin:0 0 6px;font-size:17px}.help p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}
-.step{display:flex;gap:12px;background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.step .num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}.step .body{min-width:0}.step h3{margin:3px 0 6px;font-size:17px}.step p{margin:0;color:var(--muted);font-size:15px;line-height:1.45}.step .link{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;text-decoration:none;font-size:15px}
+.step{display:flex;gap:12px;background:var(--sheet-card);border-radius:14px;padding:14px 16px;margin-bottom:10px}.step .num{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:15px;display:grid;place-items:center}.step .body{min-width:0}.step h3{margin:3px 0 6px;font-size:17px}.step p{margin:0;color:var(--muted);font-size:15px;line-height:1.45;overflow-wrap:anywhere}.step .link{display:inline-block;margin-top:10px;color:var(--accent);font-weight:600;text-decoration:none;font-size:15px}
 .empty{background:var(--card);border-radius:22px;padding:28px 22px;text-align:center;box-shadow:var(--shadow)}
 .empty svg{width:56px;height:56px;color:var(--accent)}
 .empty h2{margin:12px 0 6px;font-size:22px}
@@ -839,13 +839,14 @@ const LINKS = {
   signup: 'https://github.com/signup',
   template: 'https://github.com/new?template_name=fenix-template&template_owner=zimmicz',
   token: 'https://github.com/settings/personal-access-tokens/new',
+  cron: 'https://console.cron-job.org/signup',
   ntfy: 'https://apps.apple.com/app/ntfy/id1625396347',
   hc: 'https://healthchecks.io'
 }
 
 const SETUP = {
   en: {
-    intro: 'Steps 1–2 are enough to control your heating from the phone. Steps 3–10 add the hourly robot: weather notifications and sun control. It takes about 15 minutes and everything is free.',
+    intro: 'Steps 1–2 are enough to control your heating from the phone. Steps 3–11 add the hourly robot: weather notifications and sun control. It takes about 20 minutes and everything is free.',
     basic: 'Remote control', robot: 'Weather robot (optional)', extra: 'Extra safety (optional)',
     steps: [
       ['Add the app to your Home Screen', 'Open this page in Safari, tap Share (square with an arrow) → Add to Home Screen. It then opens fullscreen like any other app.'],
@@ -853,8 +854,9 @@ const SETUP = {
       ['Create a GitHub account', 'GitHub runs the robot for free, every hour, even when your phone is off.', ['Sign up at GitHub', 'signup']],
       ['Create your robot', 'Tap the button, name the repository (for example heating), choose Private and tap Create repository. Private matters: the robot keeps a log that shows when you are at home.', ['Create from template', 'template']],
       ['Give the robot your Fenix login', 'In your new repository: Settings → Secrets and variables → Actions → New repository secret. Add FENIX_EMAIL with your Fenix email, then FENIX_PASSWORD with your password. GitHub keeps them encrypted.'],
-      ['Start the robot', 'Open the Actions tab, confirm enabling workflows if asked, choose heating → Run workflow. After about a minute it turns green, and from then on it runs every hour by itself.'],
-      ['Create a key for this app', 'Repository access: Only select repositories → your repository. Permissions → Repository permissions → Contents: Read and write. Tap Generate token and copy it (it starts with github_pat_).', ['Create token', 'token']],
+      ['Start the robot', 'Open the Actions tab, confirm enabling workflows if asked, choose heating → Run workflow. After about a minute it turns green.'],
+      ['Create a key', 'Repository access: Only select repositories → your repository. Permissions → Repository permissions → Actions: Read and write, and Contents: Read and write. Tap Generate token and copy it (it starts with github_pat_). Steps 8 and 9 use it.', ['Create token', 'token']],
+      ['Run it every hour', 'GitHub\'s own timer skips most hours, so a free cron-job.org account starts the robot instead. Sign up, then Create cronjob. URL: https://api.github.com/repos/your-name/heating/actions/workflows/heating.yml/dispatches. Schedule: every hour at minute 7. Under Advanced: Request method POST, headers Authorization = Bearer followed by a space and the key from step 7, and Accept = application/vnd.github+json, Request body {"ref":"main"}. Save, then tap Test run: a new run appears in the Actions tab of your repository.', ['Sign up at cron-job.org', 'cron']],
       ['Connect the app', 'In this app: Settings → GitHub. Repository = your-name/heating, Token = the key from step 7. Tap Connect.', null, 'github'],
       ['Turn on notifications', 'Install ntfy. In this app tap Settings → Copy topic. In ntfy tap +, paste the topic and subscribe. Back here, tap Send test notification.', ['ntfy in the App Store', 'ntfy']],
       ['Add your windows', 'Settings → Rooms & windows: for each room add its windows (direction, width × height, how many). Check the plan in the Forecast tab for a few days, then turn on Switch rooms to eco automatically.'],
@@ -862,7 +864,7 @@ const SETUP = {
     ]
   },
   cs: {
-    intro: 'Kroky 1–2 stačí k ovládání topení z telefonu. Kroky 3–10 přidají hodinového robota: upozornění podle počasí a řízení podle slunce. Zabere to asi 15 minut a vše je zdarma.',
+    intro: 'Kroky 1–2 stačí k ovládání topení z telefonu. Kroky 3–11 přidají hodinového robota: upozornění podle počasí a řízení podle slunce. Zabere to asi 20 minut a vše je zdarma.',
     basic: 'Dálkové ovládání', robot: 'Robot podle počasí (volitelné)', extra: 'Pojistka navíc (volitelné)',
     steps: [
       ['Přidej aplikaci na plochu', 'Otevři tuhle stránku v Safari, klepni na Sdílet (čtverec se šipkou) → Přidat na plochu. Pak se otevírá přes celou obrazovku jako jiné aplikace.'],
@@ -870,8 +872,9 @@ const SETUP = {
       ['Založ si účet na GitHubu', 'GitHub zdarma pouští robota každou hodinu, i když máš vypnutý telefon.', ['Registrace na GitHubu', 'signup']],
       ['Vytvoř si robota', 'Klepni na tlačítko, pojmenuj repozitář (třeba topeni), zvol Private a klepni na Create repository. Soukromý musí být: robot si vede záznam, ze kterého je vidět, kdy jsi doma.', ['Vytvořit ze šablony', 'template']],
       ['Dej robotovi přihlášení k Fenixu', 'V novém repozitáři: Settings → Secrets and variables → Actions → New repository secret. Přidej FENIX_EMAIL s e-mailem k Fenixu a pak FENIX_PASSWORD s heslem. GitHub je drží zašifrované.'],
-      ['Spusť robota', 'Otevři záložku Actions, případně potvrď zapnutí workflows, vyber heating → Run workflow. Asi za minutu zezelená a od té doby běží každou hodinu sám.'],
-      ['Vytvoř klíč pro tuhle aplikaci', 'Repository access: Only select repositories → tvůj repozitář. Permissions → Repository permissions → Contents: Read and write. Klepni na Generate token a zkopíruj ho (začíná github_pat_).', ['Vytvořit token', 'token']],
+      ['Spusť robota', 'Otevři záložku Actions, případně potvrď zapnutí workflows, vyber heating → Run workflow. Asi za minutu zezelená.'],
+      ['Vytvoř klíč', 'Repository access: Only select repositories → tvůj repozitář. Permissions → Repository permissions → Actions: Read and write a Contents: Read and write. Klepni na Generate token a zkopíruj ho (začíná github_pat_). Použiješ ho v krocích 8 a 9.', ['Vytvořit token', 'token']],
+      ['Spouštěj ho každou hodinu', 'Vlastní časovač GitHubu většinu hodin vynechá, proto robota spouští bezplatný účet na cron-job.org. Zaregistruj se a dej Create cronjob. URL: https://api.github.com/repos/tvoje-jméno/topeni/actions/workflows/heating.yml/dispatches. Schedule: každou hodinu v 7. minutě. V Advanced: Request method POST, hlavičky Authorization = Bearer, mezera a klíč z kroku 7, a Accept = application/vnd.github+json, Request body {"ref":"main"}. Ulož a klepni na Test run: v záložce Actions tvého repozitáře přibude nový běh.', ['Registrace na cron-job.org', 'cron']],
       ['Připoj aplikaci', 'V této aplikaci: Nastavení → GitHub. Repozitář = tvoje-jméno/topeni, Token = klíč z kroku 7. Klepni na Připojit.', null, 'github'],
       ['Zapni notifikace', 'Nainstaluj ntfy. Tady klepni na Nastavení → Zkopírovat téma. V ntfy klepni na +, vlož téma a přihlas se k odběru. Pak tady klepni na Poslat testovací notifikaci.', ['ntfy v App Store', 'ntfy']],
       ['Zadej okna', 'Nastavení → Místnosti a okna: u každé místnosti přidej okna (směr, šířka × výška, počet). Pár dní sleduj plán v záložce Předpověď a pak zapni Automaticky přepínat na útlum.'],
@@ -892,8 +895,8 @@ function setupSheet () {
     h('div', { class: 'sheet-hdr' }, h('h2', {}, t('setupGuide')), h('button', { class: 'done', onclick: closeSheet }, t('done'))),
     h('div', { class: 'note', style: 'margin:0 4px 8px' }, g.intro),
     h('div', { class: 'section' }, g.basic), g.steps.slice(0, 2).map((s, i) => step(i, s)),
-    h('div', { class: 'section' }, g.robot), g.steps.slice(2, 10).map((s, i) => step(i + 2, s)),
-    h('div', { class: 'section' }, g.extra), step(10, g.steps[10])
+    h('div', { class: 'section' }, g.robot), g.steps.slice(2, 11).map((s, i) => step(i + 2, s)),
+    h('div', { class: 'section' }, g.extra), step(11, g.steps[11])
   ]
 }
 function helpSheet () {
