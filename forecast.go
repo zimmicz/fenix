@@ -370,7 +370,7 @@ func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error
 			if !cfg.AutoAdjust || !ok || hour < w.Start || hour > w.SunEnd {
 				continue
 			}
-			if slices.Contains([]string{modes["eco"], modes["frost"], modes["off"], modes["boost"]}, gv) {
+			if slices.Contains([]string{modes["eco"], modes["frost"], modes["off"], modes["boost"], modes["manual"]}, gv) {
 				s.Done = true
 				continue
 			}

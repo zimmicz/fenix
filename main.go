@@ -22,6 +22,7 @@ var modes = map[string]string{
 	"eco":     "3",
 	"boost":   "4",
 	"program": "11",
+	"manual":  "15",
 }
 
 func env(key, def string) string {

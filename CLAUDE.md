@@ -8,7 +8,7 @@ Public repo. Never commit personal data (logs, location, tariff, credentials). D
 go test ./...                                   # httptest fake of the cloud API, no creds needed
 FENIX_EMAIL=... FENIX_PASSWORD=... go run . status
 go run . set ZONE comfort|eco|frost|boost|manual CELSIUS   # polls 60s for readback
-go run . mode ZONE comfort|off|frost|eco|boost|program
+go run . mode ZONE comfort|off|frost|eco|boost|program|manual
 go run . log                                    # appends rows to data/log.csv (LOG_FILE overrides)
 go run . forecast                               # rules from config.json, state in data/state.json, ntfy push
 ```

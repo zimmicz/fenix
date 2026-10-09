@@ -25,7 +25,7 @@ Add each room's windows in Settings (direction, width × height in metres, how m
 
 `gain = Σ width × height × count × irradiance × 0.6` (0.6 ≈ share of sunlight passing double glazing as heat)
 
-An hour is **sunny** for a room when the gain is at least *share* (default 50 %) of the room's heater power. On a sunny day the room goes to eco *lead* hours (default 3) before the first sunny hour, because the floor needs time to cool, and goes back to its previous mode after the last sunny hour, or earlier if clouds wipe out the remaining sun. A room you change by hand is left alone for the rest of the day, and rooms already on eco, frost, off or boost are not touched. Zones reporting 0 W heater power are skipped. Bathrooms usually want sun control off.
+An hour is **sunny** for a room when the gain is at least *share* (default 50 %) of the room's heater power. On a sunny day the room goes to eco *lead* hours (default 3) before the first sunny hour, because the floor needs time to cool, and goes back to its previous mode after the last sunny hour, or earlier if clouds wipe out the remaining sun. A room you change by hand is left alone for the rest of the day, and rooms already on manual, eco, frost, off or boost are not touched. Zones reporting 0 W heater power are skipped. Bathrooms usually want sun control off.
 
 With *Switch rooms to eco automatically* off you only get the evening heads-up (default 18:00): "Tomorrow: Obyvak sun 10–15 h, eco from 07 h".
 
@@ -38,7 +38,7 @@ Notify-only, once per day: day (today/tomorrow), `tmax`/`tmin` (°C) or `sunshin
 ```sh
 FENIX_EMAIL=... FENIX_PASSWORD=... go run github.com/zimmicz/fenix@main status
 go run github.com/zimmicz/fenix@main set ZONE comfort|eco|frost|boost|manual CELSIUS
-go run github.com/zimmicz/fenix@main mode ZONE comfort|off|frost|eco|boost|program
+go run github.com/zimmicz/fenix@main mode ZONE comfort|off|frost|eco|boost|program|manual
 go run github.com/zimmicz/fenix@main log        # appends to data/log.csv (LOG_FILE)
 go run github.com/zimmicz/fenix@main forecast   # config.json + data/state.json (CONFIG_FILE, STATE_FILE)
 ```

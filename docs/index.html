@@ -16,7 +16,7 @@
 <style>
 :root{
   --bg:#f2f2f7;--card:#fff;--fg:#000;--muted:#8a8a8e;--sep:rgba(60,60,67,.18);--fill:rgba(120,120,128,.14);--fill2:rgba(120,120,128,.24);
-  --heat:#ff6b1a;--heat-bg:linear-gradient(160deg,#ff8a3d,#ff5a1f);--eco:#30b07a;--frost:#2f8cff;--off:#8e8e93;--sched:#8e5cf7;--boost:#ff3b30;--comfort:#f5bd1f;
+  --heat:#ff6b1a;--heat-bg:linear-gradient(160deg,#ff8a3d,#ff5a1f);--eco:#30b07a;--frost:#2f8cff;--off:#8e8e93;--sched:#8e5cf7;--boost:#ff3b30;--comfort:#f5bd1f;--manual:#00a3a3;
   --seg-on:#fff;--sheet:var(--bg);--sheet-card:var(--card);--accent:#ff6b1a;--green:#34c759;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);color-scheme:light
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -75,7 +75,7 @@ input,select,textarea{font:inherit;color:inherit}
 .seg{display:flex;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
 .seg button{flex:1;padding:7px 4px;border-radius:8px;font-size:14px;font-weight:500;white-space:nowrap}
 .seg button.on{background:var(--seg-on);box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 1px rgba(0,0,0,.1)}
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.modes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .mode{background:var(--fill);border-radius:14px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:14px;font-weight:500}
 .mode svg{width:24px;height:24px}
 .mode.on{color:#fff}
@@ -165,6 +165,7 @@ const ICONS = {
   leaf: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4c-9 0-15 4-15 11 0 1.4.4 2.8 1 4l-2 2 1.4 1.4 2-2c1.2.7 2.5 1 3.9 1C18.4 21.4 20 13 20 4zM9 17c1.8-3.6 4.4-6.2 8-8-2.6 2.5-4.9 5.2-6.6 8.4L9 17z"/></svg>',
   snow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 2.5L15 4M9 20l3-2.5 3 2.5"/></svg>',
   power: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></svg>',
+  hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5v-8a1.5 1.5 0 0 1 3 0v8M14 11.5v-6a1.5 1.5 0 0 1 3 0v7.5M17 11.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8l-2.9-4a1.6 1.6 0 0 1 2.5-2L8 15"/></svg>',
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   bolt: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
   cloud: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 19a5 5 0 0 1-.6-10A6.5 6.5 0 0 1 19 9.6 4.7 4.7 0 0 1 18 19H7z"/></svg>',
@@ -180,7 +181,7 @@ const TEXT = {
   en: {
     appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
     done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
-    m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Booster', m_off: 'Off',
+    m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Booster', m_off: 'Off', m_manual: 'Manual',
     met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
     f_0: 'South', f_m22: 'South-southeast', f_m45: 'Southeast', f_m67: 'East-southeast', f_m90: 'East', f_m112: 'East-northeast', f_m135: 'Northeast', f_m157: 'North-northeast', f_180: 'North', f_157: 'North-northwest', f_135: 'Northwest', f_112: 'West-northwest', f_90: 'West', f_67: 'West-southwest', f_45: 'Southwest', f_22: 'South-southwest',
     errSignInFirst: 'Sign in to Fenix first', errWrongLogin: 'Wrong email or password', errSignIn: 'Sign-in failed ({0})', errNoHome: 'This account has no home', errFenix: 'Fenix error {0}',
@@ -221,7 +222,7 @@ const TEXT = {
   cs: {
     appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
     done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
-    m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Booster', m_off: 'Vypnuto',
+    m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Booster', m_off: 'Vypnuto', m_manual: 'Manuál',
     met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
     f_0: 'Jih', f_m22: 'Jihojihovýchod', f_m45: 'Jihovýchod', f_m67: 'Východojihovýchod', f_m90: 'Východ', f_m112: 'Východoseverovýchod', f_m135: 'Severovýchod', f_m157: 'Severoseverovýchod', f_180: 'Sever', f_157: 'Severoseverozápad', f_135: 'Severozápad', f_112: 'Západoseverozápad', f_90: 'Západ', f_67: 'Západojihozápad', f_45: 'Jihozápad', f_22: 'Jihojihozápad',
     errSignInFirst: 'Nejdřív se přihlas do Fenixu', errWrongLogin: 'Špatný e-mail nebo heslo', errSignIn: 'Přihlášení selhalo ({0})', errNoHome: 'Účet nemá žádnou domácnost', errFenix: 'Chyba Fenixu {0}',
@@ -265,9 +266,9 @@ const HELP = {
   en: [
     ['What this is', 'A remote control for your Fenix floor heating plus a robot that checks the weather every hour. The robot runs on GitHub in your private repository, started every hour by cron-job.org, even when your phone is off.'],
     ['Home', 'Each tile is a room: current temperature, its mode and target. Orange tiles are heating right now. Tap a tile to change the mode or the comfort and eco temperatures. Changes take up to a minute to reach the unit; the app tells you when the unit confirmed.'],
-    ['Modes', 'Schedule = the room follows its weekly program. Comfort and Eco = fixed temperature you set below. Frost = only protects from freezing. Off = no heating. Schedule restores the program the room had before. Weekly program (in the room) edits the schedule hour by hour.'],
+    ['Modes', 'Schedule = the room follows its weekly program. Manual, Comfort, Eco and Booster = fixed temperature you set below. Frost = only protects from freezing. Off = no heating. Schedule restores the program the room had before. Weekly program (in the room) edits the schedule hour by hour.'],
     ['Sun control', 'Floor heating reacts slowly, so on a sunny day it keeps pumping heat while the sun is already warming the room through the windows. Tell the app where each room\'s windows face and how big they are. Every hour the robot checks the forecast and works out when the sun will really heat each room.'],
-    ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If the forecast loses the sun earlier, it switches back at the next hourly check. If you change the room by hand, the robot leaves it alone that day. Rooms already on eco, frost, off or boost are not touched.'],
+    ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If the forecast loses the sun earlier, it switches back at the next hourly check. If you change the room by hand, the robot leaves it alone that day. Rooms already on manual, eco, frost, off or booster are not touched.'],
     ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
     ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
     ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Then check your cron-job.org job and the Actions tab of your repository. Nothing gets damaged: eco only means a cooler room.']
@@ -275,9 +276,9 @@ const HELP = {
   cs: [
     ['Co to je', 'Dálkové ovládání podlahového topení Fenix a robot, který každou hodinu kontroluje počasí. Robot běží na GitHubu ve tvém soukromém repozitáři, každou hodinu ho spouští cron-job.org, i když máš vypnutý telefon.'],
     ['Domů', 'Každá dlaždice je jedna místnost: aktuální teplota, režim a cílová teplota. Oranžové dlaždice právě topí. Klepnutím na dlaždici změníš režim nebo teplotu komfortu a útlumu. Změna se do jednotky dostane až za minutu, aplikace ukáže, až ji jednotka potvrdí.'],
-    ['Režimy', 'Program = místnost jede podle týdenního programu. Komfort a Útlum = pevná teplota, kterou nastavíš níž. Nezámrz = jen ochrana proti zamrznutí. Vypnuto = netopí. Program vrátí místnost do programu, který měla předtím. Týdenní program (v místnosti) upravíš po hodinách.'],
+    ['Režimy', 'Program = místnost jede podle týdenního programu. Manuál, Komfort, Útlum a Booster = pevná teplota, kterou nastavíš níž. Nezámrz = jen ochrana proti zamrznutí. Vypnuto = netopí. Program vrátí místnost do programu, který měla předtím. Týdenní program (v místnosti) upravíš po hodinách.'],
     ['Řízení podle slunce', 'Podlahové topení reaguje pomalu, takže za slunečného dne dál topí, i když místnost už ohřívá slunce okny. Řekni aplikaci, kam okna v každé místnosti míří a jak jsou velká. Robot každou hodinu projde předpověď a spočítá, kdy slunce každou místnost opravdu ohřeje.'],
-    ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když předpověď slunce ztratí dřív, vrátí ji při nejbližší hodinové kontrole. Když místnost přepneš ručně, robot ji ten den nechá být. Místnosti, které už jsou v útlumu, nezámrzu, vypnuté nebo v boostu, nechává být.'],
+    ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když předpověď slunce ztratí dřív, vrátí ji při nejbližší hodinové kontrole. Když místnost přepneš ručně, robot ji ten den nechá být. Místnosti, které už jsou v manuálu, útlumu, nezámrzu, vypnuté nebo v boosteru, nechává být.'],
     ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
     ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
     ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Pak zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři. Nic se nepokazí: útlum znamená jen chladnější místnost.']
@@ -286,12 +287,14 @@ const HELP = {
 
 const MODES = [
   { key: 'program', icon: 'clock', color: 'var(--sched)' },
-  { key: 'comfort', code: '0', icon: 'sun', color: 'var(--comfort)', sp: 'consigne_confort' },
-  { key: 'eco', code: '3', icon: 'leaf', color: 'var(--eco)', sp: 'consigne_eco' },
+  { key: 'manual', code: '15', icon: 'hand', color: 'var(--manual)', sp: 'consigne_manuel' },
   { key: 'frost', code: '2', icon: 'snow', color: 'var(--frost)', sp: 'consigne_hg' },
-  { key: 'boost', code: '4', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' },
-  { key: 'off', code: '1', icon: 'power', color: 'var(--off)' }
+  { key: 'off', code: '1', icon: 'power', color: 'var(--off)' },
+  { key: 'eco', code: '3', icon: 'leaf', color: 'var(--eco)', sp: 'consigne_eco' },
+  { key: 'comfort', code: '0', icon: 'sun', color: 'var(--comfort)', sp: 'consigne_confort' },
+  { key: 'boost', code: '4', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' }
 ]
+const M = Object.fromEntries(MODES.map(m => [m.key, m]))
 const METRICS = { tmax: '°C', tmin: '°C', sunshine: 'h' }
 const FACADES = [0, -22, -45, -67, -90, -112, -135, -157, 180, 157, 135, 112, 90, 67, 45, 22]
 
@@ -636,14 +639,14 @@ function zoneSheet (label) {
       onclick: () => mm !== m && setMode(label, mm)
     }, icon(mm.icon), h('span', { style: mm === m ? '' : 'color:var(--fg)' }, modeLabel(mm))))),
     h('div', { class: 'section' }, t('temperatures')),
-    h('div', { class: 'group' }, sp(MODES[2], 'consigne_eco'), sp(MODES[1], 'consigne_confort'), sp(MODES[4], 'consigne_boost')),
+    h('div', { class: 'group' }, sp(M.eco, 'consigne_eco'), sp(M.comfort, 'consigne_confort'), sp(M.boost, 'consigne_boost'), sp(M.manual, 'consigne_manuel')),
     /^[0-9A-F]{336}$/i.test(d.programme) ? h('div', { class: 'group', style: 'margin-top:16px' },
       navRow(t('weeklyProgram'), null, () => openSheet({ type: 'program', label, slots: toSlots(d.programme), day: (new Date().getDay() + 6) % 7, brush: 1 }))) : null,
     h('div', { class: 'status' }, S.status[label] || '')
   ]
 }
 
-const LEVELS = [{ code: 0, mode: MODES[2] }, { code: 1, mode: MODES[1] }, { code: 3, mode: MODES[4] }, { code: 2, mode: MODES[3] }]
+const LEVELS = [{ code: 0, mode: M.eco }, { code: 1, mode: M.comfort }, { code: 3, mode: M.boost }, { code: 2, mode: M.frost }]
 const levelColor = code => LEVELS.find(l => l.code === code).mode.color
 const toSlots = p => [...p].flatMap(c => { const n = parseInt(c, 16); return [n >> 2, n & 3] })
 const fromSlots = s => s.filter((_, i) => i % 2 === 0).map((v, i) => ((v << 2) | s[i * 2 + 1]).toString(16).toUpperCase()).join('')
