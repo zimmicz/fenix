@@ -9,18 +9,40 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
+const glassGain = 0.6
+
 type Config struct {
-	Lat           *float64 `json:"lat"`
-	Lon           *float64 `json:"lon"`
-	FacadeAzimuth float64  `json:"facade_azimuth"`
-	NtfyTopic     string   `json:"ntfy_topic"`
-	AutoAdjust    bool     `json:"auto_adjust"`
-	Rules         []Rule   `json:"rules"`
+	Lat        *float64        `json:"lat"`
+	Lon        *float64        `json:"lon"`
+	NtfyTopic  string          `json:"ntfy_topic"`
+	AutoAdjust bool            `json:"auto_adjust"`
+	Sun        SunConfig       `json:"sun"`
+	Rooms      map[string]Room `json:"rooms"`
+	Rules      []Rule          `json:"rules"`
+}
+
+type SunConfig struct {
+	LeadHours   int     `json:"lead_hours"`
+	Share       float64 `json:"share"`
+	HeadsUpHour int     `json:"heads_up_hour"`
+}
+
+type Room struct {
+	Sun     bool     `json:"sun"`
+	Windows []Window `json:"windows"`
+}
+
+type Window struct {
+	Azimuth float64 `json:"azimuth"`
+	Width   float64 `json:"width"`
+	Height  float64 `json:"height"`
+	Count   int     `json:"count"`
 }
 
 type Rule struct {
@@ -30,12 +52,6 @@ type Rule struct {
 	Op      string  `json:"op"`
 	Value   float64 `json:"value"`
 	Message string  `json:"message"`
-	Action  *Action `json:"action,omitempty"`
-}
-
-type Action struct {
-	Zones []string `json:"zones"`
-	Mode  string   `json:"mode"`
 }
 
 type Day struct {
@@ -43,27 +59,37 @@ type Day struct {
 	Metrics map[string]float64
 }
 
-type Revert struct {
-	Date  string            `json:"date"`
-	Zone  string            `json:"zone"`
-	Modes map[string]string `json:"modes"`
+type Forecast struct {
+	Days []Day
+	Now  string
+	GTI  map[float64]map[string]float64
 }
 
-type Pending struct {
-	Date   string `json:"date"`
-	RuleID string `json:"rule_id"`
-	Action Action `json:"action"`
+type SunState struct {
+	Date    string            `json:"date"`
+	Prev    map[string]string `json:"prev,omitempty"`
+	Applied bool              `json:"applied,omitempty"`
+	Done    bool              `json:"done,omitempty"`
 }
 
 type State struct {
-	Fired   map[string][]string `json:"fired"`
-	Pending []Pending           `json:"pending"`
-	Reverts []Revert            `json:"reverts"`
+	Fired   map[string][]string  `json:"fired"`
+	HeadsUp string               `json:"heads_up,omitempty"`
+	Sun     map[string]*SunState `json:"sun"`
 }
+
+type Span struct{ Start, SunStart, SunEnd int }
 
 var dayIndex = map[string]int{"today": 0, "tomorrow": 1}
 
-var metricUnits = map[string]string{"tmax": "°C", "tmin": "°C", "sunshine": "h", "solar": "kWh/m²"}
+var metricUnits = map[string]string{"tmax": "°C", "tmin": "°C", "sunshine": "h"}
+
+func (sc SunConfig) withDefaults() SunConfig {
+	if sc == (SunConfig{}) {
+		return SunConfig{LeadHours: 3, Share: 50, HeadsUpHour: 18}
+	}
+	return sc
+}
 
 func (r Rule) validate() error {
 	if r.ID == "" {
@@ -78,11 +104,6 @@ func (r Rule) validate() error {
 	if r.Op != ">" && r.Op != "<" {
 		return fmt.Errorf("rule %s: op must be > or <", r.ID)
 	}
-	if r.Action != nil {
-		if _, ok := modes[r.Action.Mode]; !ok {
-			return fmt.Errorf("rule %s: unknown mode %q", r.ID, r.Action.Mode)
-		}
-	}
 	return nil
 }
 
@@ -93,58 +114,97 @@ func (r Rule) matches(v float64) bool {
 	return v < r.Value
 }
 
-func fetchForecast(base string, lat, lon, azimuth float64) ([]Day, error) {
-	q := url.Values{
-		"latitude":      {strconv.FormatFloat(lat, 'f', 4, 64)},
-		"longitude":     {strconv.FormatFloat(lon, 'f', 4, 64)},
-		"daily":         {"temperature_2m_max,temperature_2m_min,sunshine_duration"},
-		"hourly":        {"global_tilted_irradiance"},
-		"tilt":          {"90"},
-		"azimuth":       {strconv.FormatFloat(azimuth, 'f', 0, 64)},
-		"timezone":      {"auto"},
-		"forecast_days": {"2"},
+func sunWindow(r Room, powerW float64, gti map[float64]map[string]float64, date string, sc SunConfig) (Span, bool) {
+	first, last := -1, -1
+	for h := 0; h < 24; h++ {
+		t := fmt.Sprintf("%sT%02d:00", date, h)
+		gain := 0.0
+		for _, w := range r.Windows {
+			gain += w.Width * w.Height * float64(max(w.Count, 1)) * gti[w.Azimuth][t] * glassGain
+		}
+		if powerW > 0 && gain >= sc.Share/100*powerW {
+			if first < 0 {
+				first = h
+			}
+			last = h
+		}
 	}
+	if first < 0 {
+		return Span{}, false
+	}
+	return Span{Start: max(0, first-sc.LeadHours), SunStart: first, SunEnd: last}, true
+}
+
+func getJSON(u string, v any) error {
 	client := http.Client{Timeout: 20 * time.Second}
-	resp, err := client.Get(base + "?" + q.Encode())
+	resp, err := client.Get(u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("forecast: %s", resp.Status)
+		return fmt.Errorf("forecast: %s", resp.Status)
+	}
+	return json.NewDecoder(resp.Body).Decode(v)
+}
+
+func fetchForecast(base string, lat, lon float64, azimuths []float64) (Forecast, error) {
+	query := func(extra url.Values) string {
+		q := url.Values{
+			"latitude":      {strconv.FormatFloat(lat, 'f', 4, 64)},
+			"longitude":     {strconv.FormatFloat(lon, 'f', 4, 64)},
+			"timezone":      {"auto"},
+			"forecast_days": {"2"},
+		}
+		for k, v := range extra {
+			q[k] = v
+		}
+		return base + "?" + q.Encode()
 	}
 	var r struct {
+		Current struct {
+			Time string `json:"time"`
+		} `json:"current"`
 		Daily struct {
 			Time     []string  `json:"time"`
 			Tmax     []float64 `json:"temperature_2m_max"`
 			Tmin     []float64 `json:"temperature_2m_min"`
 			Sunshine []float64 `json:"sunshine_duration"`
 		} `json:"daily"`
-		Hourly struct {
-			Time []string   `json:"time"`
-			GTI  []*float64 `json:"global_tilted_irradiance"`
-		} `json:"hourly"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		return nil, err
+	if err := getJSON(query(url.Values{"daily": {"temperature_2m_max,temperature_2m_min,sunshine_duration"}, "current": {"temperature_2m"}}), &r); err != nil {
+		return Forecast{}, err
 	}
 	d := r.Daily
-	if len(d.Time) < 2 || len(d.Tmax) < 2 || len(d.Tmin) < 2 || len(d.Sunshine) < 2 || len(r.Hourly.Time) != len(r.Hourly.GTI) {
-		return nil, errors.New("forecast: incomplete response")
+	if len(d.Time) < 2 || len(d.Tmax) < 2 || len(d.Tmin) < 2 || len(d.Sunshine) < 2 || len(r.Current.Time) < 13 {
+		return Forecast{}, errors.New("forecast: incomplete response")
 	}
-	solar := map[string]float64{}
-	for i, t := range r.Hourly.Time {
-		if g := r.Hourly.GTI[i]; g != nil {
-			solar[t[:10]] += *g
+	fc := Forecast{Now: r.Current.Time, GTI: map[float64]map[string]float64{}}
+	for i := range 2 {
+		fc.Days = append(fc.Days, Day{Date: d.Time[i], Metrics: map[string]float64{"tmax": d.Tmax[i], "tmin": d.Tmin[i], "sunshine": d.Sunshine[i] / 3600}})
+	}
+	for _, az := range azimuths {
+		var h struct {
+			Hourly struct {
+				Time []string   `json:"time"`
+				GTI  []*float64 `json:"global_tilted_irradiance"`
+			} `json:"hourly"`
 		}
+		if err := getJSON(query(url.Values{"hourly": {"global_tilted_irradiance"}, "tilt": {"90"}, "azimuth": {strconv.FormatFloat(az, 'f', 0, 64)}}), &h); err != nil {
+			return Forecast{}, err
+		}
+		if len(h.Hourly.Time) != len(h.Hourly.GTI) {
+			return Forecast{}, errors.New("forecast: incomplete hourly response")
+		}
+		m := map[string]float64{}
+		for i, t := range h.Hourly.Time {
+			if g := h.Hourly.GTI[i]; g != nil {
+				m[t] = *g
+			}
+		}
+		fc.GTI[az] = m
 	}
-	days := make([]Day, 2)
-	for i := range days {
-		days[i] = Day{Date: d.Time[i], Metrics: map[string]float64{
-			"tmax": d.Tmax[i], "tmin": d.Tmin[i], "sunshine": d.Sunshine[i] / 3600, "solar": solar[d.Time[i]] / 1000,
-		}}
-	}
-	return days, nil
+	return fc, nil
 }
 
 func notify(base, topic, msg string) error {
@@ -168,113 +228,152 @@ func notify(base, topic, msg string) error {
 	return nil
 }
 
-func applyAction(c *Client, st *State, date string, a Action) error {
-	zones, err := c.Zones()
-	if err != nil {
-		return err
+func title(label string) string {
+	if label == "" {
+		return label
 	}
-	for _, label := range a.Zones {
-		i := slices.IndexFunc(zones, func(z Zone) bool { return z.Label == label })
-		if i < 0 {
-			return fmt.Errorf("unknown zone %q", label)
-		}
-		d := zones[i].Device
-		if !slices.ContainsFunc(st.Reverts, func(r Revert) bool { return r.Zone == label }) {
-			prev := map[string]string{}
-			for _, k := range []string{"gv_mode", "nv_mode"} {
-				if v, ok := d[k]; ok && v != nil {
-					prev[k] = fmt.Sprint(v)
-				}
-			}
-			st.Reverts = append(st.Reverts, Revert{Date: date, Zone: label, Modes: prev})
-		}
-		code := modes[a.Mode]
-		if err := c.Write(d.str("id_device"), map[string]string{"gv_mode": code, "nv_mode": code}); err != nil {
-			return err
-		}
-	}
-	return nil
+	return strings.ToUpper(label[:1]) + strings.ToLower(label[1:])
 }
 
-func step(c *Client, cfg Config, st *State, days []Day, send func(string) error) error {
-	today := days[0].Date
+func step(c *Client, cfg Config, st *State, fc Forecast, send func(string) error) error {
+	today, tomorrow := fc.Days[0].Date, fc.Days[1].Date
+	hour, _ := strconv.Atoi(fc.Now[11:13])
+	sc := cfg.Sun.withDefaults()
 	var errs []error
-
-	var keep []Revert
-	var reverted []string
-	var zones []Zone
-	for _, r := range st.Reverts {
-		if r.Date >= today {
-			keep = append(keep, r)
-			continue
-		}
-		if zones == nil {
-			var err error
-			if zones, err = c.Zones(); err != nil {
-				return err
-			}
-		}
-		i := slices.IndexFunc(zones, func(z Zone) bool { return z.Label == r.Zone })
-		if i < 0 {
-			errs = append(errs, fmt.Errorf("revert: unknown zone %q", r.Zone))
-			continue
-		}
-		if err := c.Write(zones[i].Device.str("id_device"), r.Modes); err != nil {
-			errs = append(errs, err)
-			keep = append(keep, r)
-			continue
-		}
-		reverted = append(reverted, r.Zone)
-	}
-	st.Reverts = keep
-	if len(reverted) > 0 {
-		errs = append(errs, send("Reverted "+strings.Join(reverted, ", ")+" to previous mode"))
-	}
-
-	var pending []Pending
-	for _, p := range st.Pending {
-		switch {
-		case p.Date > today:
-			pending = append(pending, p)
-		case p.Date == today && cfg.AutoAdjust:
-			if err := applyAction(c, st, today, p.Action); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			errs = append(errs, send(fmt.Sprintf("Applied %s: %s → %s", p.RuleID, strings.Join(p.Action.Zones, ", "), p.Action.Mode)))
-		}
-	}
-	st.Pending = pending
-
 	if st.Fired == nil {
 		st.Fired = map[string][]string{}
 	}
+	if st.Sun == nil {
+		st.Sun = map[string]*SunState{}
+	}
+
+	var labels []string
+	for l := range st.Sun {
+		labels = append(labels, l)
+	}
+	for l, r := range cfg.Rooms {
+		if r.Sun && len(r.Windows) > 0 && st.Sun[l] == nil {
+			labels = append(labels, l)
+		}
+	}
+	sort.Strings(labels)
+
+	var zones []Zone
+	if len(labels) > 0 {
+		var err error
+		if zones, err = c.Zones(); err != nil {
+			return err
+		}
+	}
+	var headsUp []string
+	for _, label := range labels {
+		i := slices.IndexFunc(zones, func(z Zone) bool { return z.Label == label })
+		if i < 0 {
+			errs = append(errs, fmt.Errorf("unknown zone %q", label))
+			continue
+		}
+		d := zones[i].Device
+		power, _ := strconv.ParseFloat(d.str("puissance_app"), 64)
+		room := cfg.Rooms[label]
+		enabled := room.Sun && len(room.Windows) > 0
+		restore := func(s *SunState, why string) {
+			if err := c.Write(d.str("id_device"), s.Prev); err != nil {
+				errs = append(errs, err)
+				return
+			}
+			s.Done = true
+			errs = append(errs, send(fmt.Sprintf("%s back to its normal mode (%s)", title(label), why)))
+		}
+
+		s := st.Sun[label]
+		if s != nil && s.Date != today {
+			if s.Applied && !s.Done {
+				restore(s, "new day")
+				if !s.Done {
+					continue
+				}
+			}
+			s = nil
+		}
+		if !enabled && (s == nil || !s.Applied || s.Done) {
+			delete(st.Sun, label)
+			continue
+		}
+		if s == nil {
+			s = &SunState{Date: today}
+			st.Sun[label] = s
+		}
+
+		if enabled && hour >= sc.HeadsUpHour && st.HeadsUp != today {
+			if w, ok := sunWindow(room, power, fc.GTI, tomorrow, sc); ok {
+				headsUp = append(headsUp, fmt.Sprintf("%s sun %02d–%02d h, eco from %02d h", title(label), w.SunStart, w.SunEnd+1, w.Start))
+			}
+		}
+
+		if s.Done {
+			continue
+		}
+		w, ok := sunWindow(room, power, fc.GTI, today, sc)
+		ok = ok && enabled
+		gv := d.str("gv_mode")
+		if !s.Applied {
+			if !cfg.AutoAdjust || !ok || hour < w.Start || hour > w.SunEnd {
+				continue
+			}
+			if slices.Contains([]string{modes["eco"], modes["frost"], modes["off"], modes["boost"]}, gv) {
+				s.Done = true
+				continue
+			}
+			s.Prev = map[string]string{}
+			for _, k := range []string{"gv_mode", "nv_mode"} {
+				if v, has := d[k]; has && v != nil {
+					s.Prev[k] = fmt.Sprint(v)
+				}
+			}
+			eco := modes["eco"]
+			if err := c.Write(d.str("id_device"), map[string]string{"gv_mode": eco, "nv_mode": eco}); err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			s.Applied = true
+			errs = append(errs, send(fmt.Sprintf("☀ %s → eco until %02d:00, sun expected %02d–%02d h", title(label), w.SunEnd+1, w.SunStart, w.SunEnd+1)))
+			continue
+		}
+		switch {
+		case gv != modes["eco"]:
+			s.Done = true
+			errs = append(errs, send(fmt.Sprintf("%s was changed by hand, leaving it alone today", title(label))))
+		case !enabled:
+			restore(s, "sun control turned off")
+		case !ok:
+			restore(s, "less sun than forecast")
+		case hour > w.SunEnd:
+			restore(s, "sun is gone")
+		}
+	}
+	if hour >= sc.HeadsUpHour && st.HeadsUp != today {
+		st.HeadsUp = today
+		if len(headsUp) > 0 {
+			msg := "Tomorrow: " + strings.Join(headsUp, "; ")
+			if !cfg.AutoAdjust {
+				msg += " (auto-adjust is off)"
+			}
+			errs = append(errs, send(msg))
+		}
+	}
+
 	for _, r := range cfg.Rules {
 		if err := r.validate(); err != nil {
 			errs = append(errs, err)
 			continue
 		}
-		day := days[dayIndex[r.Day]]
+		day := fc.Days[dayIndex[r.Day]]
 		v := day.Metrics[r.Metric]
 		if slices.Contains(st.Fired[day.Date], r.ID) || !r.matches(v) {
 			continue
 		}
-		msg := fmt.Sprintf("%s (%s %s %.1f %s)", r.Message, r.Day, r.Metric, v, metricUnits[r.Metric])
-		if r.Action != nil && cfg.AutoAdjust {
-			a := fmt.Sprintf("%s → %s", strings.Join(r.Action.Zones, ", "), r.Action.Mode)
-			if day.Date == today {
-				if err := applyAction(c, st, today, *r.Action); err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				msg += "\nApplied: " + a
-			} else {
-				st.Pending = append(st.Pending, Pending{Date: day.Date, RuleID: r.ID, Action: *r.Action})
-				msg += "\nWill apply " + day.Date + ": " + a
-			}
-		}
 		st.Fired[day.Date] = append(st.Fired[day.Date], r.ID)
-		errs = append(errs, send(msg))
+		errs = append(errs, send(fmt.Sprintf("%s (%s %s %.1f %s)", r.Message, r.Day, r.Metric, v, metricUnits[r.Metric])))
 	}
 	for date := range st.Fired {
 		if date < today {
@@ -310,15 +409,24 @@ func forecast(c *Client, configPath, statePath string) error {
 	if cfg.Lat != nil && cfg.Lon != nil {
 		lat, lon = *cfg.Lat, *cfg.Lon
 	}
-	days, err := fetchForecast(env("FORECAST_URL", "https://api.open-meteo.com/v1/forecast"), lat, lon, cfg.FacadeAzimuth)
+	var az []float64
+	for _, r := range cfg.Rooms {
+		for _, w := range r.Windows {
+			if r.Sun && !slices.Contains(az, w.Azimuth) {
+				az = append(az, w.Azimuth)
+			}
+		}
+	}
+	fc, err := fetchForecast(env("FORECAST_URL", "https://api.open-meteo.com/v1/forecast"), lat, lon, az)
 	if err != nil {
 		return err
 	}
-	for _, d := range days {
-		fmt.Printf("%s tmax=%.1f tmin=%.1f sunshine=%.1fh solar=%.2fkWh/m²\n", d.Date, d.Metrics["tmax"], d.Metrics["tmin"], d.Metrics["sunshine"], d.Metrics["solar"])
+	fmt.Println("now", fc.Now)
+	for _, d := range fc.Days {
+		fmt.Printf("%s tmax=%.1f tmin=%.1f sunshine=%.1fh\n", d.Date, d.Metrics["tmax"], d.Metrics["tmin"], d.Metrics["sunshine"])
 	}
 	ntfy := env("NTFY_URL", "https://ntfy.sh")
-	stepErr := step(c, cfg, &st, days, func(msg string) error { return notify(ntfy, cfg.NtfyTopic, msg) })
+	stepErr := step(c, cfg, &st, fc, func(msg string) error { return notify(ntfy, cfg.NtfyTopic, msg) })
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetIndent("", "  ")

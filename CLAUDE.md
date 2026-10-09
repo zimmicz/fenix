@@ -24,6 +24,7 @@ Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, n
 - Temperatures are tenths of °F: `C = (raw - 320) / 18`. Setpoint limits come from each device's `min_set_point`/`max_set_point` (410..986 raw, 5..37 °C).
 - Writes take effect with delay (cloud to unit); a readback right after a write can show the old value.
 - Never rewrite the `programme` schedule strings; drive setpoints and modes only.
-- Zones usually run raw `gv_mode` values outside the named map (8, 16 seen: unit schedules). Auto-adjust reverts restore the recorded raw `gv_mode`/`nv_mode`, never a mode name.
+- Zones usually run raw `gv_mode` values outside the named map (8, 16 seen: unit schedules). Sun control restores the recorded raw `gv_mode`/`nv_mode`, never a mode name; the web app's Schedule button restores the last seen raw code (localStorage).
+- Sun control math lives twice: `sunWindow` in forecast.go and `sunWindow` in docs/index.html (preview). Keep them identical.
 - Forecast dates come from Open-Meteo `timezone=auto`, so "today" is the home's local date; state compares dates as `YYYY-MM-DD` strings.
 - Breaking a command's CLI breaks every user's hourly workflow (they track `@main`).

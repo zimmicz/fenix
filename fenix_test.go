@@ -1,18 +1,20 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 )
 
-const homeJSON = `{"code":{"code":"8","key":"ok","value":"ok"},"data":{"zones":[
-{"zone_label":"OBYVAK","devices":[{"id_device":"C001-000","temperature_air":"751","consigne_confort":"717","consigne_eco":"536","gv_mode":"16","nv_mode":"16","heating_up":"0","puissance_app":"3400","fan_speed":0,"on_off":null}]},
-{"zone_label":"EMPTY","devices":[]}]}}`
+type fakeUnit struct {
+	gv     string
+	pushed []url.Values
+}
 
-func fakeFenix(t *testing.T) (*Client, *[]url.Values) {
-	var pushed []url.Values
+func fakeFenix(t *testing.T) (*Client, *fakeUnit) {
+	u := &fakeUnit{gv: "16"}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
@@ -30,11 +32,16 @@ func fakeFenix(t *testing.T) (*Client, *[]url.Values) {
 		w.Write([]byte(`{"code":{"code":1,"key":"ok","value":"ok"},"data":{"smarthomes":[{"smarthome_id":"H1","latitude":"49.2","longitude":"17.6"}]}}`))
 	})
 	mux.HandleFunc("/api/v0.1/human/smarthome/read/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(homeJSON))
+		fmt.Fprintf(w, `{"code":{"code":"8","key":"ok","value":"ok"},"data":{"zones":[
+{"zone_label":"OBYVAK","devices":[{"id_device":"C001-000","temperature_air":"751","consigne_confort":"717","consigne_eco":"536","gv_mode":%q,"nv_mode":%q,"heating_up":"0","puissance_app":"3400","fan_speed":0,"on_off":null}]},
+{"zone_label":"EMPTY","devices":[]}]}}`, u.gv, u.gv)
 	})
 	mux.HandleFunc("/api/v0.1/human/query/push/", func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
-		pushed = append(pushed, r.Form)
+		u.pushed = append(u.pushed, r.Form)
+		if v := r.Form.Get("query[gv_mode]"); v != "" {
+			u.gv = v
+		}
 		w.Write([]byte(`{"code":{"code":"8","key":"ok","value":"ok"},"data":{}}`))
 	})
 	srv := httptest.NewServer(mux)
@@ -43,11 +50,11 @@ func fakeFenix(t *testing.T) (*Client, *[]url.Values) {
 	if err := c.Login("a@b.c", "pw"); err != nil {
 		t.Fatal(err)
 	}
-	return c, &pushed
+	return c, u
 }
 
 func TestClient(t *testing.T) {
-	c, pushed := fakeFenix(t)
+	c, u := fakeFenix(t)
 	if c.HomeID != "H1" || c.Lat != "49.2" {
 		t.Fatalf("home not parsed: %+v", c)
 	}
@@ -67,7 +74,7 @@ func TestClient(t *testing.T) {
 	if err := c.Write("C001-000", map[string]string{"consigne_confort": "707"}); err != nil {
 		t.Fatal(err)
 	}
-	p := (*pushed)[0]
+	p := u.pushed[0]
 	if p.Get("query[id_device]") != "C001-000" || p.Get("query[consigne_confort]") != "707" || p.Get("smarthome_id") != "H1" {
 		t.Fatalf("push form: %v", p)
 	}

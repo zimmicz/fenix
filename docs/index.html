@@ -23,6 +23,7 @@
   --bg:#000;--card:#1c1c1e;--fg:#fff;--muted:#8d8d93;--sep:rgba(84,84,88,.6);--fill:rgba(120,120,128,.24);--fill2:rgba(120,120,128,.36);--shadow:none;--seg-on:#636366;--sheet:#1c1c1e;--sheet-card:#2c2c2e;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#000;--card:#1c1c1e;--fg:#fff;--muted:#8d8d93;--sep:rgba(84,84,88,.6);--fill:rgba(120,120,128,.24);--fill2:rgba(120,120,128,.36);--shadow:none;--seg-on:#636366;--sheet:#1c1c1e;--sheet-card:#2c2c2e;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}
 html,body{background:var(--bg)}
 body{margin:0;color:var(--fg);font:17px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;-webkit-font-smoothing:antialiased;padding:calc(env(safe-area-inset-top) + 8px) 0 calc(96px + env(safe-area-inset-bottom))}
 main{max-width:560px;margin:0 auto;padding:0 16px}
@@ -168,9 +169,8 @@ const MODES = [
   { key: 'boost', code: '4', label: 'Boost', icon: 'bolt', color: 'var(--boost)', sp: 'consigne_boost' },
   { key: 'off', code: '1', label: 'Off', icon: 'power', color: 'var(--off)' }
 ]
-const METRICS = { solar: ['Sun on windows', 'kWh/m²'], tmax: ['Max temperature', '°C'], tmin: ['Min temperature', '°C'], sunshine: ['Sunshine', 'h'] }
+const METRICS = { tmax: ['Max temperature', '°C'], tmin: ['Min temperature', '°C'], sunshine: ['Sunshine', 'h'] }
 const FACADES = [['South', 0], ['South-southeast', -22], ['Southeast', -45], ['East-southeast', -67], ['East', -90], ['East-northeast', -112], ['Northeast', -135], ['North-northeast', -157], ['North', 180], ['North-northwest', 157], ['Northwest', 135], ['West-northwest', 112], ['West', 90], ['West-southwest', 67], ['Southwest', 45], ['South-southwest', 22]]
-const ACTION_MODES = ['eco', 'frost', 'off', 'comfort', 'program']
 
 const store = {
   get () { try { return JSON.parse(localStorage.getItem('fenix') || '{}') } catch { return {} } },
@@ -323,7 +323,9 @@ async function ghRead (path) {
 
 async function loadConfig () {
   const { data, sha } = await ghRead('config.json')
-  S.config = { lat: null, lon: null, facade_azimuth: 0, ntfy_topic: randomTopic(), auto_adjust: false, rules: [], ...data }
+  S.config = { lat: null, lon: null, ntfy_topic: randomTopic(), auto_adjust: false, sun: { lead_hours: 3, share: 50, heads_up_hour: 18 }, rooms: {}, rules: [], ...data }
+  delete S.config.facade_azimuth
+  S.config.rules = S.config.rules.filter(r => METRICS[r.metric])
   S.configSha = sha
   S.state = (await ghRead('data/state.json')).data
   setDirty(false)
@@ -338,6 +340,7 @@ async function saveConfig () {
   S.configSha = (await r.json()).content.sha
   setDirty(false)
   toast('Saved · applies at the next hourly check')
+  await act(loadForecast)()
 }
 
 function setDirty (v) {
@@ -350,21 +353,44 @@ const randomTopic = () => 'heating-' + Array.from(crypto.getRandomValues(new Uin
 async function loadForecast () {
   const c = S.config || {}
   if (c.lat == null || c.lon == null) { if (!S.home) await login() }
-  const q = new URLSearchParams({
-    latitude: c.lat ?? S.home.lat, longitude: c.lon ?? S.home.lon, tilt: 90, azimuth: c.facade_azimuth ?? 0, timezone: 'auto', forecast_days: 2,
-    current: 'temperature_2m', daily: 'temperature_2m_max,temperature_2m_min,sunshine_duration', hourly: 'global_tilted_irradiance'
+  const base = { latitude: c.lat ?? S.home.lat, longitude: c.lon ?? S.home.lon, timezone: 'auto', forecast_days: 2 }
+  const get = async extra => {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?${new URLSearchParams({ ...base, ...extra })}`)
+    if (!r.ok) throw new Error(`Forecast unavailable (${r.status})`)
+    return r.json()
+  }
+  const azimuths = [...new Set(Object.values(c.rooms || {}).flatMap(r => r.windows || []).map(w => w.azimuth))]
+  const [j, ...hourly] = await Promise.all([
+    get({ current: 'temperature_2m', daily: 'temperature_2m_max,temperature_2m_min,sunshine_duration' }),
+    ...azimuths.map(az => get({ hourly: 'global_tilted_irradiance', tilt: 90, azimuth: az }))
+  ])
+  S.gti = {}
+  azimuths.forEach((az, k) => {
+    S.gti[az] = Object.fromEntries(hourly[k].hourly.time.map((t, i) => [t, hourly[k].hourly.global_tilted_irradiance[i] || 0]))
   })
-  const r = await fetch(`https://api.open-meteo.com/v1/forecast?${q}`)
-  if (!r.ok) throw new Error(`Forecast unavailable (${r.status})`)
-  const j = await r.json()
-  const solar = {}
-  j.hourly.time.forEach((t, i) => { solar[t.slice(0, 10)] = (solar[t.slice(0, 10)] || 0) + (j.hourly.global_tilted_irradiance[i] || 0) })
   S.outdoor = j.current?.temperature_2m
   S.forecast = j.daily.time.map((date, i) => ({
-    date, tmax: j.daily.temperature_2m_max[i], tmin: j.daily.temperature_2m_min[i],
-    sunshine: j.daily.sunshine_duration[i] / 3600, solar: (solar[date] || 0) / 1000
+    date, tmax: j.daily.temperature_2m_max[i], tmin: j.daily.temperature_2m_min[i], sunshine: j.daily.sunshine_duration[i] / 3600
   }))
 }
+
+const sunCfg = () => ({ lead_hours: 3, share: 50, heads_up_hour: 18, ...(S.config?.sun || {}) })
+
+function sunWindow (label, date) {
+  const room = S.config?.rooms?.[label]
+  const z = S.zones?.find(z => z.label === label)
+  const power = Number(z?.d.puissance_app)
+  if (!room?.windows?.length || !power || !S.gti) return null
+  const sc = sunCfg()
+  let first = -1; let last = -1
+  for (let hr = 0; hr < 24; hr++) {
+    const t = `${date}T${String(hr).padStart(2, '0')}:00`
+    const gain = room.windows.reduce((sum, w) => sum + w.width * w.height * Math.max(w.count || 1, 1) * (S.gti[w.azimuth]?.[t] || 0) * 0.6, 0)
+    if (gain >= sc.share / 100 * power) { if (first < 0) first = hr; last = hr }
+  }
+  return first < 0 ? null : { start: Math.max(0, first - sc.lead_hours), sunStart: first, sunEnd: last + 1 }
+}
+const hh = n => `${String(n).padStart(2, '0')}:00`
 
 async function refresh () {
   S.loading = true
@@ -462,43 +488,59 @@ const ruleHits = r => {
   return r.op === '>' ? v > r.value : v < r.value
 }
 
+function sunPlanRow (label) {
+  const room = S.config.rooms[label]
+  const f = S.forecast
+  const plan = f ? f.map((d, i) => {
+    const w = sunWindow(label, d.date)
+    return `${i ? 'Tomorrow' : 'Today'}: ${w ? `sun ${hh(w.sunStart)}–${hh(w.sunEnd)}, eco from ${hh(w.start)}` : 'not enough sun'}`
+  }).join(' · ') : '…'
+  const active = S.state?.sun?.[label]
+  const on = active && active.date === f?.[0]?.date && active.applied && !active.done
+  return h('button', { class: 'row', onclick: () => openSheet({ type: 'room', label }) },
+    h('div', { class: 'two' }, h('span', {}, title(label)), h('small', {}, room.sun ? plan : 'Sun control off')),
+    on ? h('span', { class: 'badge on' }, 'Eco now') : null, icon('chev', 'chev'))
+}
+
 function forecastView () {
   const f = S.forecast
   const rules = S.config?.rules || []
-  const st = S.state || {}
-  const maxSolar = Math.max(5, ...(f || []).map(d => d.solar))
-  const facade = FACADES.find(([, a]) => a === (S.config?.facade_azimuth ?? 0))?.[0] || 'South'
+  const sunRooms = Object.keys(S.config?.rooms || {}).filter(l => S.config.rooms[l].windows?.length).sort()
   return [
-    header('Forecast', f ? `Windows facing ${facade.toLowerCase()}` : 'Loading…', true),
+    header('Forecast', S.config ? (S.config.auto_adjust ? 'Automatic sun control on' : 'Notifications only') : 'Loading…', true),
     h('div', { class: 'days' }, (f || [null, null]).map((d, i) => d
       ? h('div', { class: 'day' },
         h('div', { class: 'when' }, i ? 'Tomorrow' : 'Today'),
         h('div', { class: 'date' }, new Date(d.date + 'T12:00').toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })),
         h('div', { class: 'wx' }, wxIcon(d), h('div', { class: 't' }, `${Math.round(d.tmax)}°`, h('small', {}, `${Math.round(d.tmin)}°`))),
-        h('div', { class: 'm' }, 'Sunshine', h('b', {}, `${d.sunshine.toFixed(1)} h`)),
-        h('div', { class: 'm' }, 'Window sun', h('b', {}, `${d.solar.toFixed(1)} kWh`)),
-        h('div', { class: 'bar' }, h('i', { style: `width:${Math.min(100, d.solar / maxSolar * 100)}%` })))
+        h('div', { class: 'm' }, 'Sunshine', h('b', {}, `${d.sunshine.toFixed(1)} h`)))
       : h('div', { class: 'skel' }))),
-    h('div', { class: 'section' }, 'Your rules'),
-    S.config
-      ? rules.length
+    S.config ? [
+      h('div', { class: 'section' }, 'Sun in your rooms'),
+      sunRooms.length
+        ? h('div', { class: 'group' }, sunRooms.map(sunPlanRow))
+        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, 'Add windows to your rooms')),
+      h('div', { class: 'note' }, `A room is sunny when sun through its windows covers ${sunCfg().share}% of its heater power. Eco starts ${sunCfg().lead_hours} h before the sun so the floor cools in time.`),
+      h('div', { class: 'section' }, 'Your rules'),
+      rules.length
         ? h('div', { class: 'group' }, rules.map(r => h('div', { class: 'row' },
           h('div', { class: 'two' }, h('span', {}, r.message || 'Untitled rule'), h('small', {}, ruleText(r))),
           h('span', { class: 'badge' + (ruleHits(r) ? ' on' : '') }, ruleHits(r) ? 'Fires' : 'Quiet'))))
-        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, 'Add your first rule'))
-      : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, 'Connect GitHub to use rules')),
-    (st.pending?.length || st.reverts?.length)
-      ? [h('div', { class: 'section' }, 'Automatic changes'),
-          h('div', { class: 'group' },
-            (st.pending || []).map(p => h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, `${p.action.zones.map(title).join(', ')} → ${p.action.mode}`), h('small', {}, `Scheduled for ${p.date}`)))),
-            (st.reverts || []).map(r => h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, `${title(r.zone)} overridden`), h('small', {}, 'Goes back to its previous mode tonight')))))]
-      : null,
-    S.config ? h('div', { class: 'note' }, 'Checked every hour. "Fires" means the rule matches the current forecast.') : null
+        : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, 'Add a rule'))
+    ] : h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, 'Connect GitHub to use sun control and rules'))
   ]
 }
 
 function navRow (label, value, onclick) {
   return h('button', { class: 'row', onclick }, h('span', { class: 'label' }, label), value ? h('span', { class: 'value' }, value) : null, icon('chev', 'chev'))
+}
+
+function numStepper (value, stepBy, lo, hi, set, unit = '') {
+  const apply = d => { set(Math.min(hi, Math.max(lo, Math.round((value + d) * 10) / 10))); setDirty(true); render() }
+  return h('div', { class: 'stepper' },
+    h('button', { disabled: value <= lo, onclick: () => apply(-stepBy) }, '−'),
+    h('span', { class: 'v', style: 'min-width:60px;font-size:17px' }, `${value}${unit}`),
+    h('button', { disabled: value >= hi, onclick: () => apply(stepBy) }, '+'))
 }
 
 function settingsView () {
@@ -511,14 +553,30 @@ function settingsView () {
     h('div', { class: 'group' },
       navRow('Fenix', s.email || 'Not signed in', () => openSheet({ type: 'login' })),
       navRow('GitHub', s.repo || 'Not connected', () => openSheet({ type: 'github' }))),
-    h('div', { class: 'note' }, 'GitHub stores your rules in your private repository, where the hourly check reads them.'),
+    h('div', { class: 'note' }, 'GitHub stores your settings in your private repository, where the hourly check reads them.'),
     c ? [
-      h('div', { class: 'section' }, 'Your home'),
+      h('div', { class: 'section' }, 'Rooms & windows'),
       h('div', { class: 'group' },
-        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Windows face'),
-          h('select', { onchange: change(e => { c.facade_azimuth = Number(e.target.value) }) },
-            FACADES.map(([n, a]) => h('option', { value: a, selected: c.facade_azimuth === a }, n)))),
+        S.zones
+          ? S.zones.map(z => {
+            const room = c.rooms[z.label]
+            const n = (room?.windows || []).reduce((sum, w) => sum + Math.max(w.count || 1, 1), 0)
+            return navRow(title(z.label), n ? `${n} window${n > 1 ? 's' : ''}${room.sun ? '' : ' · sun off'}` : 'No windows', () => openSheet({ type: 'room', label: z.label }))
+          })
+          : h('div', { class: 'row' }, h('span', { class: 'value' }, 'Sign in to Fenix to list rooms'))),
+      h('div', { class: 'note' }, 'Add each room\'s windows so the app knows how much sun reaches it.'),
+      h('div', { class: 'section' }, 'Sun control'),
+      h('div', { class: 'group' },
+        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Switch rooms to eco automatically'),
+          h('input', { type: 'checkbox', class: 'switch', checked: c.auto_adjust, onchange: change(e => { c.auto_adjust = e.target.checked }) })),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Sunny when sun covers'), h('small', {}, 'of the room\'s heater power')),
+          numStepper(c.sun.share, 10, 10, 100, v => { c.sun.share = v }, '%')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Start eco earlier'), h('small', {}, 'the floor needs time to cool')),
+          numStepper(c.sun.lead_hours, 1, 0, 8, v => { c.sun.lead_hours = v }, ' h')),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'Tomorrow\'s heads-up'), h('small', {}, 'evening notification')),
+          numStepper(c.sun.heads_up_hour, 1, 12, 23, v => { c.sun.heads_up_hour = v }, ':00')),
         navRow('Location', c.lat != null ? `${c.lat}, ${c.lon}` : 'Fenix home', () => openSheet({ type: 'location' }))),
+      h('div', { class: 'note' }, 'When on, sunny rooms switch to eco before the sun arrives and go back to their normal mode when it is gone or clouds come. A room you change by hand is left alone for the rest of the day. When off, you only get the evening heads-up.'),
       h('div', { class: 'section' }, 'Notifications'),
       h('div', { class: 'group' },
         h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'ntfy topic'), h('small', { style: 'user-select:all;-webkit-user-select:all' }, c.ntfy_topic))),
@@ -531,23 +589,19 @@ function settingsView () {
           })
         }, 'Send test notification')),
       h('div', { class: 'note' }, 'Install the free ntfy app and subscribe to this topic. Anyone who knows the topic can read it, so keep it private.'),
-      h('div', { class: 'section' }, 'Rules'),
+      h('div', { class: 'section' }, 'Weather rules'),
       h('div', { class: 'group' },
         c.rules.map((r, i) => h('button', { class: 'row', onclick: () => openSheet({ type: 'rule', index: i }) },
-          h('div', { class: 'two' }, h('span', {}, r.message || 'Untitled rule'), h('small', {}, ruleText(r) + (r.action ? ` · ${r.action.mode}` : ''))), icon('chev', 'chev'))),
+          h('div', { class: 'two' }, h('span', {}, r.message || 'Untitled rule'), h('small', {}, ruleText(r))), icon('chev', 'chev'))),
         h('button', {
           class: 'row action',
           onclick: () => {
-            c.rules.push({ id: 'r' + Date.now().toString(36), day: 'tomorrow', metric: 'solar', op: '>', value: 3, message: 'Sunny tomorrow' })
+            c.rules.push({ id: 'r' + Date.now().toString(36), day: 'tomorrow', metric: 'tmin', op: '<', value: 0, message: 'Frost tomorrow' })
             setDirty(true)
             openSheet({ type: 'rule', index: c.rules.length - 1 })
           }
         }, 'Add rule')),
-      h('div', { class: 'section' }, 'Automation'),
-      h('div', { class: 'group' },
-        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Adjust heating automatically'),
-          h('input', { type: 'checkbox', class: 'switch', checked: c.auto_adjust, onchange: change(e => { c.auto_adjust = e.target.checked }) }))),
-      h('div', { class: 'note' }, 'When on, rules with a mode switch those zones on the forecast day and switch them back the following night. When off, you only get notifications.')
+      h('div', { class: 'note' }, 'Rules only send a notification, once per day.')
     ] : null
   ]
 }
@@ -562,8 +616,6 @@ function ruleSheet (index) {
   if (!r) return null
   const upd = fn => { fn(); setDirty(true); render() }
   const [, unit] = METRICS[r.metric]
-  const stepSize = r.metric === 'solar' ? 0.5 : 1
-  const zones = S.zones ? S.zones.map(z => z.label) : (r.action?.zones || [])
   return [
     h('div', { class: 'sheet-hdr' }, h('h2', {}, 'Rule'), h('button', { class: 'done', onclick: closeSheet }, 'Done')),
     h('div', { class: 'group' },
@@ -575,28 +627,54 @@ function ruleSheet (index) {
       h('label', { class: 'row' }, h('span', { class: 'label' }, 'Measure'),
         h('select', { onchange: e => upd(() => { r.metric = e.target.value }) }, Object.entries(METRICS).map(([k, [n]]) => h('option', { value: k, selected: r.metric === k }, n)))),
       h('div', { class: 'row' }, seg([['>', 'Above'], ['<', 'Below']], r.op, v => upd(() => { r.op = v }))),
-      h('div', { class: 'row' }, h('span', { class: 'label' }, 'Threshold'),
-        h('div', { class: 'stepper' },
-          h('button', { onclick: () => upd(() => { r.value = Math.round((r.value - stepSize) * 10) / 10 }) }, '−'),
-          h('span', { class: 'v', style: 'min-width:90px' }, `${r.value} ${unit}`),
-          h('button', { onclick: () => upd(() => { r.value = Math.round((r.value + stepSize) * 10) / 10 }) }, '+')))),
-    S.forecast ? h('div', { class: 'note' }, `Now: ${S.forecast[r.day === 'today' ? 0 : 1][r.metric].toFixed(1)} ${unit} ${r.day} → ${ruleHits(r) ? 'would fire' : 'quiet'}`) : null,
-    h('div', { class: 'section' }, 'Then'),
-    h('div', { class: 'group' },
-      h('label', { class: 'row' }, h('span', { class: 'label' }, 'Action'),
-        h('select', {
-          onchange: e => upd(() => {
-            if (e.target.value) r.action = { zones: r.action?.zones || [], mode: e.target.value }
-            else delete r.action
-          })
-        }, h('option', { value: '' }, 'Notify only'), ACTION_MODES.map(m => h('option', { value: m, selected: r.action?.mode === m }, `Switch to ${MODES.find(x => x.key === m).label}`)))),
-      r.action ? h('div', { class: 'chips' }, zones.map(l => h('button', {
-        class: 'chip' + (r.action.zones.includes(l) ? ' on' : ''),
-        onclick: () => upd(() => { r.action.zones = r.action.zones.includes(l) ? r.action.zones.filter(x => x !== l) : [...r.action.zones, l] })
-      }, title(l)))) : null),
-    r.action && !c.auto_adjust ? h('div', { class: 'note' }, 'Automatic changes are off in Settings, so this rule only notifies for now.') : null,
+      h('div', { class: 'row' }, h('span', { class: 'label' }, 'Threshold'), numStepper(r.value, 1, -30, 40, v => { r.value = v }, ` ${unit}`))),
+    S.forecast ? h('div', { class: 'note' }, `Now: ${S.forecast[r.day === 'today' ? 0 : 1][r.metric].toFixed(1)} ${unit} ${r.day} → ${ruleHits(r) ? 'would notify' : 'quiet'}`) : null,
     h('div', { class: 'section' }, ''),
     h('div', { class: 'group' }, h('button', { class: 'row danger', onclick: () => { c.rules.splice(index, 1); setDirty(true); closeSheet() } }, 'Delete rule'))
+  ]
+}
+
+function roomSheet (label) {
+  const c = S.config
+  const room = c.rooms[label] || { sun: true, windows: [] }
+  const upd = fn => {
+    fn()
+    c.rooms[label] = room
+    setDirty(true)
+    render()
+    if (room.windows.some(w => !S.gti?.[w.azimuth])) act(loadForecast)().then(render)
+  }
+  const z = S.zones?.find(z => z.label === label)
+  const power = Number(z?.d.puissance_app) || 0
+  const num = (w, key, labelText) => h('label', { class: 'row' }, h('span', { class: 'label' }, labelText),
+    h('input', { type: 'number', inputMode: 'decimal', step: '0.1', min: '0.1', value: w[key], oninput: e => { const v = Number(e.target.value); if (v > 0) { w[key] = v; c.rooms[label] = room; setDirty(true) } } }),
+    h('span', { class: 'value', style: 'flex:none' }, 'm'))
+  const plan = S.forecast?.map((d, i) => {
+    const w = sunWindow(label, d.date)
+    return `${i ? 'Tomorrow' : 'Today'}: ${w ? `sun ${hh(w.sunStart)}–${hh(w.sunEnd)}, eco from ${hh(w.start)}` : 'not enough sun'}`
+  })
+  return [
+    h('div', { class: 'sheet-hdr' }, h('h2', {}, title(label)), h('button', { class: 'done', onclick: closeSheet }, 'Done')),
+    h('div', { class: 'group' },
+      h('label', { class: 'row' }, h('span', { class: 'label' }, 'Use sun for this room'),
+        h('input', { type: 'checkbox', class: 'switch', checked: room.sun, onchange: e => upd(() => { room.sun = e.target.checked }) }))),
+    h('div', { class: 'note' }, power ? `Heater ${(power / 1000).toFixed(1)} kW.` : 'Heater power unknown.', room.windows.length && plan ? ' ' + plan.join(' · ') + '.' : ''),
+    room.windows.map((w, i) => [
+      h('div', { class: 'section' }, `Window ${i + 1}`),
+      h('div', { class: 'group' },
+        h('label', { class: 'row' }, h('span', { class: 'label' }, 'Faces'),
+          h('select', { onchange: e => upd(() => { w.azimuth = Number(e.target.value) }) }, FACADES.map(([n, a]) => h('option', { value: a, selected: w.azimuth === a }, n)))),
+        num(w, 'width', 'Width'),
+        num(w, 'height', 'Height'),
+        h('div', { class: 'row' }, h('div', { class: 'two' }, h('span', {}, 'How many'), h('small', {}, 'identical windows')), numStepper(w.count || 1, 1, 1, 20, v => { w.count = v; c.rooms[label] = room })),
+        h('button', { class: 'row danger', onclick: () => upd(() => { room.windows.splice(i, 1) }) }, 'Remove window'))
+    ]),
+    h('div', { class: 'section' }, ''),
+    h('div', { class: 'group' }, h('button', {
+      class: 'row action',
+      onclick: () => upd(() => { room.windows.push({ ...(room.windows.at(-1) || { azimuth: -22, width: 1, height: 2.5 }), count: 1 }) })
+    }, 'Add window')),
+    h('div', { class: 'note' }, 'Measure the glass, not the frame. Floor-to-ceiling panel ≈ 1 × 2.5 m.')
   ]
 }
 
@@ -623,6 +701,7 @@ function sheetContent () {
   const s = store.get()
   if (sh.type === 'zone') return zoneSheet(sh.label)
   if (sh.type === 'rule') return ruleSheet(sh.index)
+  if (sh.type === 'room') return roomSheet(sh.label)
   if (sh.type === 'login') {
     return formSheet('Fenix account', [['email', 'Email', 'email', 'you@example.com', s.email], ['password', 'Password', 'password', 'Required', s.password]], 'Sign in', async v => {
       store.set(v)
