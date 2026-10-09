@@ -148,6 +148,12 @@ body.dirty{padding-bottom:calc(170px + env(safe-area-inset-bottom))}
 .hours{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;padding:12px 16px;touch-action:none;user-select:none;-webkit-user-select:none}
 .hours div{height:36px;border-radius:6px}
 .hours small{font-size:11px;color:var(--muted);text-align:center;margin-bottom:6px}
+.ubars{display:flex;gap:8px;padding:14px 16px 12px}
+.ucol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}
+.ucol small{color:var(--muted);font-size:11px;white-space:nowrap}
+.ucol b{font-weight:500;font-size:12px}
+.ubar{width:100%;max-width:32px;height:140px;display:flex;flex-direction:column-reverse;border-radius:6px;overflow:hidden;background:var(--fill)}
+.ubar i{display:block;flex:none}
 #toast span{background:var(--card);color:var(--fg);padding:12px 18px;border-radius:999px;box-shadow:0 8px 30px rgba(0,0,0,.18);font-size:15px;font-weight:500;animation:fade .2s}
 </style>
 </head>
@@ -174,12 +180,15 @@ const ICONS = {
   help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.6-3 4.5"/><circle cx="12" cy="18.5" r=".6" fill="currentColor"/></svg>',
   home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2.5 11h2.7v9.5h5.3v-6h3v6h5.3V11h2.7z"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.7 7.7 0 0 0-1.7-1L15 3.3h-4L10.6 6a7.7 7.7 0 0 0-1.7 1l-2.5-1-2 3.5L6.5 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="6" width="4" height="15" rx="1"/><rect x="17" y="9" width="4" height="12" rx="1"/></svg>',
   chev: '<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m1 1 6 6-6 6"/></svg>'
 }
 
 const TEXT = {
   en: {
     appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
+    usage: 'Usage', last7: 'Last 7 days', prev7: 'Previous 7 days', byRoom: 'By room, last 7 days', connectGhForUsage: 'Connect GitHub to see usage',
+    usageNote: 'Estimated from hourly snapshots: heating on or off × heater power. Use it to compare rooms and days, not as a meter reading.',
     done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
     m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Booster', m_off: 'Off', m_manual: 'Manual',
     met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
@@ -221,6 +230,8 @@ const TEXT = {
   },
   cs: {
     appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
+    usage: 'Spotřeba', last7: 'Posledních 7 dní', prev7: 'Předchozích 7 dní', byRoom: 'Podle místností, posledních 7 dní', connectGhForUsage: 'Připoj GitHub, ať vidíš spotřebu',
+    usageNote: 'Odhad z hodinových snímků: topí, nebo netopí × výkon topení. Ber to jako srovnání místností a dní, ne jako odečet z elektroměru.',
     done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
     m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Booster', m_off: 'Vypnuto', m_manual: 'Manuál',
     met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
@@ -271,6 +282,7 @@ const HELP = {
     ['Example', 'Living room: 4 windows of 1.2 × 2.6 m facing south-southeast, heater 3.4 kW. Tomorrow\'s forecast: sun on that side 10:00–15:00. At 18:00 today you get "Tomorrow: Living room sun 10–15 h, eco from 07 h". With automatic switching on, the robot sets the room to eco at 07:00 (3 h ahead, so the floor cools), and back to its schedule at 15:00. If the forecast loses the sun earlier, it switches back at the next hourly check. If you change the room by hand, the robot leaves it alone that day. Rooms already on manual, eco, frost, off or booster are not touched.'],
     ['Settings that matter', '"Sunny when sun covers 50%" = how much of the heater power the sun has to replace before the room counts as sunny. Lower = eco more often. "Start eco earlier 3 h" = how long your floor needs to cool down. Both are starting values; tune them after a few sunny days.'],
     ['Notifications', 'Notifications come through the free ntfy app. Subscribe to the topic shown in Settings, then tap "Send test notification". Weather rules (for example frost tomorrow) send a notification once per day.'],
+    ['Usage', 'Estimated kWh per room and day from the hourly log, with the average outdoor temperature under each day. The rooms at the top of the list are where a tighter weekly program saves the most.'],
     ['If something stops', 'Home shows when the last hourly check ran. If it is more than 2 hours old you see a red warning, and any room still in eco is listed so you can switch it back by hand. Then check your cron-job.org job and the Actions tab of your repository. Nothing gets damaged: eco only means a cooler room.']
   ],
   cs: [
@@ -281,6 +293,7 @@ const HELP = {
     ['Příklad', 'Obývák: 4 okna 1,2 × 2,6 m na jihojihovýchod, topení 3,4 kW. Předpověď na zítra: slunce na tu stranu 10:00–15:00. Dnes v 18:00 přijde „Zítra: Obývák slunce 10–15 h, útlum od 07 h“. Se zapnutým automatickým přepínáním robot v 7:00 přepne místnost na útlum (3 h dopředu, ať podlaha vychladne) a v 15:00 zpátky do programu. Když předpověď slunce ztratí dřív, vrátí ji při nejbližší hodinové kontrole. Když místnost přepneš ručně, robot ji ten den nechá být. Místnosti, které už jsou v manuálu, útlumu, nezámrzu, vypnuté nebo v boosteru, nechává být.'],
     ['Důležitá nastavení', '„Slunečno, když slunce pokryje 50 %“ = kolik výkonu topení musí slunce nahradit, aby místnost byla slunečná. Méně = útlum častěji. „Útlum dřív o 3 h“ = jak dlouho podlaha chladne. Obojí jsou výchozí hodnoty, dolaď je po pár slunečných dnech.'],
     ['Notifikace', 'Notifikace chodí přes aplikaci ntfy (zdarma). Přihlas se k tématu z Nastavení a klepni na „Poslat testovací notifikaci“. Pravidla podle počasí (třeba zítra mráz) pošlou notifikaci nejvýš jednou denně.'],
+    ['Spotřeba', 'Odhad kWh podle místností a dní z hodinového záznamu, pod každým dnem průměrná venkovní teplota. Místnosti nahoře v seznamu jsou ty, kde přísnější týdenní program ušetří nejvíc.'],
     ['Když se něco zastaví', 'Na Domů vidíš, kdy proběhla poslední hodinová kontrola. Když je starší než 2 hodiny, objeví se červené varování a seznam místností, které jsou pořád v útlumu, ať je můžeš přepnout ručně. Pak zkontroluj úlohu na cron-job.org a záložku Actions ve svém repozitáři. Nic se nepokazí: útlum znamená jen chladnější místnost.']
   ]
 }
@@ -463,6 +476,35 @@ async function ghRead (path) {
   return { data: JSON.parse(b64decode(j.content)), sha: j.sha }
 }
 
+async function ghRaw (path) {
+  const r = await gh(path, { headers: { Accept: 'application/vnd.github.raw' } })
+  if (r.status === 404) return ''
+  if (r.status === 401) throw new Error(t('errGhToken'))
+  if (!r.ok) throw new Error(t('errGh', r.status))
+  return r.text()
+}
+
+const localDate = d => d.toLocaleDateString('sv-SE')
+const usageDays = csv => {
+  const byZone = {}
+  for (const r of csv.trim().split('\n').slice(1).map(l => l.split(','))) if (r.length >= 9) (byZone[r[1]] ||= []).push(r)
+  const days = {}
+  for (const [zone, rows] of Object.entries(byZone)) {
+    rows.forEach((r, i) => {
+      const ts = new Date(r[0])
+      const hours = rows[i + 1] ? Math.min((new Date(rows[i + 1][0]) - ts) / 36e5, 2) : 1
+      const d = days[localDate(ts)] ||= { rooms: {}, out: {} }
+      d.rooms[zone] = (d.rooms[zone] || 0) + Number(r[6]) * Number(r[7]) / 1000 * hours
+      if (r[8] !== '') d.out[r[0]] = Number(r[8])
+    })
+  }
+  return days
+}
+
+async function loadUsage () {
+  S.usage = usageDays(await ghRaw('data/log.csv'))
+}
+
 async function loadConfig () {
   const { data, sha } = await ghRead('config.json')
   S.config = { lat: null, lon: null, ntfy_topic: randomTopic(), auto_adjust: false, sun: { lead_hours: 3, share: 50, heads_up_hour: 18 }, rooms: {}, rules: [], ...data }
@@ -548,7 +590,8 @@ async function refresh () {
     const s = store.get()
     await Promise.all([
       s.email && act(loadZones)(),
-      s.repo && s.ghToken && act(loadConfig)()
+      s.repo && s.ghToken && act(loadConfig)(),
+      S.tab === 'usage' && s.repo && s.ghToken && act(loadUsage)()
     ])
     if (s.email || S.config) await act(loadForecast)()
   } finally {
@@ -751,6 +794,49 @@ function forecastView () {
           h('span', { class: 'badge' + (ruleHits(r) ? ' on' : '') }, t(ruleHits(r) ? 'fires' : 'quiet')))))
         : h('div', { class: 'group' }, h('button', { class: 'row action', onclick: () => { S.tab = 'settings'; render() } }, t('addARule')))
     ] : h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, t('connectGhForSun')))
+  ]
+}
+
+const ROOM_COLORS = ['#ff6b1a', '#2f8cff', '#30b07a', '#8e5cf7', '#f5bd1f', '#ff3b30', '#00a3a3', '#8e8e93']
+const kwh = v => `${num1(v)} kWh`
+
+function usageView () {
+  const s = store.get()
+  if (!s.repo || !s.ghToken) return [header(t('usage')), h('div', { class: 'group', style: 'margin-top:20px' }, h('button', { class: 'row action', onclick: () => openSheet({ type: 'github' }) }, t('connectGhForUsage')))]
+  if (!S.usage) {
+    if (!S.usageTried) { S.usageTried = true; act(loadUsage)().then(render) }
+    return [header(t('usage'), t('loading'), true), h('div', { class: 'skel' })]
+  }
+  const dates = n => Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - n - 6 + i); return localDate(d) })
+  const sum = obj => Object.values(obj || {}).reduce((a, b) => a + b, 0)
+  const week = dates(0)
+  const prev = dates(7)
+  const total = week.reduce((a, d) => a + sum(S.usage[d]?.rooms), 0)
+  const prevTotal = prev.reduce((a, d) => a + sum(S.usage[d]?.rooms), 0)
+  const hasPrev = prev.some(d => S.usage[d])
+  const rooms = [...new Set(Object.values(S.usage).flatMap(d => Object.keys(d.rooms)))].sort()
+  const color = r => ROOM_COLORS[rooms.indexOf(r) % ROOM_COLORS.length]
+  const roomTotals = rooms.map(r => [r, week.reduce((a, d) => a + (S.usage[d]?.rooms[r] || 0), 0)]).sort((a, b) => b[1] - a[1])
+  const max = Math.max(...week.map(d => sum(S.usage[d]?.rooms)), 0.1)
+  return [
+    header(t('usage'), `${t('last7')} · ${kwh(total)}`, true),
+    h('div', { class: 'group' }, h('div', { class: 'ubars' }, week.map(d => {
+      const day = S.usage[d]
+      const temps = Object.values(day?.out || {})
+      return h('div', { class: 'ucol' },
+        h('small', {}, day ? num1(sum(day.rooms)) : '–'),
+        h('div', { class: 'ubar' }, rooms.map(r => day?.rooms[r] ? h('i', { style: `height:${day.rooms[r] / max * 100}%;background:${color(r)}` }) : null)),
+        h('b', {}, new Date(d + 'T12:00').toLocaleDateString(locale(), { weekday: 'short' })),
+        h('small', {}, temps.length ? `${Math.round(temps.reduce((a, b) => a + b, 0) / temps.length)}°` : ''))
+    }))),
+    h('div', { class: 'section' }, t('byRoom')),
+    h('div', { class: 'group' }, roomTotals.map(([r, v]) => h('div', { class: 'row' },
+      h('span', { class: 'dot', style: `background:${color(r)}` }), h('span', { class: 'label' }, title(r)),
+      h('span', { class: 'value' }, `${kwh(v)} · ${total ? Math.round(v / total * 100) : 0} %`)))),
+    hasPrev ? h('div', { class: 'group', style: 'margin-top:16px' },
+      h('div', { class: 'row' }, h('span', { class: 'label' }, t('last7')), h('span', { class: 'value' }, kwh(total))),
+      h('div', { class: 'row' }, h('span', { class: 'label' }, t('prev7')), h('span', { class: 'value' }, `${kwh(prevTotal)}${prevTotal ? ` · ${total >= prevTotal ? '+' : '−'}${Math.abs(Math.round((total - prevTotal) / prevTotal * 100))} %` : ''}`))) : null,
+    h('div', { class: 'note' }, t('usageNote'))
   ]
 }
 
@@ -1053,12 +1139,12 @@ function sheetContent () {
 }
 
 function render () {
-  const views = { zones: zonesView, forecast: forecastView, settings: settingsView }
+  const views = { zones: zonesView, forecast: forecastView, usage: usageView, settings: settingsView }
   const y = scrollY
   document.title = t('appName')
   document.getElementById('savebtn').textContent = t('saveChanges')
   document.getElementById('app').replaceChildren(...[views[S.tab]()].flat(Infinity).filter(Boolean))
-  document.getElementById('nav').replaceChildren(...[['zones', 'home', 'home'], ['forecast', 'forecast', 'sun'], ['settings', 'settings', 'gear']].map(([tab, l, i]) =>
+  document.getElementById('nav').replaceChildren(...[['zones', 'home', 'home'], ['forecast', 'forecast', 'sun'], ['usage', 'usage', 'chart'], ['settings', 'settings', 'gear']].map(([tab, l, i]) =>
     h('button', { class: S.tab === tab ? 'on' : '', onclick: () => { S.tab = tab; scrollTo(0, 0); render() } }, icon(i), t(l))))
   const host = document.getElementById('sheet')
   const content = S.sheet && sheetContent()
