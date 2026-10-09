@@ -23,7 +23,7 @@ Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, n
 - Both auth and API allow CORS from any origin, so a browser app can call them directly.
 - Temperatures are tenths of °F: `C = (raw - 320) / 18`. Setpoint limits come from each device's `min_set_point`/`max_set_point` (410..986 raw, 5..37 °C).
 - Writes take effect with delay (cloud to unit); a readback right after a write can show the old value.
-- Never rewrite the `programme` schedule strings; drive setpoints and modes only.
+- `programme` = weekly schedule, 336 hex chars: Mon..Sun, 96 quarter-hours per day, 2 bits per slot, high bits first. Slot 0 = eco (`gv_mode` 11), 1 = comfort (8), 3 = `gv_mode` 16 (boost per clevertouch), 2 unseen. Only the web app's Weekly program sheet writes it (whole string via `query[programme]`); it edits whole hours and keeps untouched quarters. The robot never touches it.
 - Zones usually run raw `gv_mode` values outside the named map (8, 16 seen: unit schedules). Sun control restores the recorded raw `gv_mode`/`nv_mode`, never a mode name; the web app's Schedule button restores the last seen raw code (localStorage).
 - Sun control math lives twice: `sunWindow` in forecast.go and `sunWindow` in docs/index.html (preview). Keep them identical.
 - Forecast dates come from Open-Meteo `timezone=auto`, so "today" is the home's local date; state compares dates as `YYYY-MM-DD` strings.
