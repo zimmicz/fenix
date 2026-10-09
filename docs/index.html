@@ -936,7 +936,7 @@ function settingsView () {
     h('div', { class: 'section' }, t('electricity')),
     h('div', { class: 'group' },
       h('label', { class: 'row' }, h('span', { class: 'label', style: 'flex:none' }, t('pricePerKwh')),
-        h('input', { type: 'number', inputMode: 'decimal', step: '0.01', min: '0', placeholder: '0', value: s.price ?? '', oninput: e => store.set({ price: Number(e.target.value.replace(',', '.')) || null }) }),
+        h('input', { type: 'text', inputMode: 'decimal', placeholder: '0', value: s.price ?? '', oninput: e => store.set({ price: Number(e.target.value.replace(',', '.')) || null }) }),
         h('span', { class: 'value', style: 'flex:none' }, 'Kč'))),
     h('div', { class: 'note' }, t('priceNote')),
     c ? [
@@ -1032,7 +1032,7 @@ function roomSheet (label) {
   const z = S.zones?.find(z => z.label === label)
   const power = Number(z?.d.puissance_app) || 0
   const num = (w, key, labelText) => h('label', { class: 'row' }, h('span', { class: 'label' }, labelText),
-    h('input', { type: 'number', inputMode: 'decimal', step: '0.1', min: '0.1', value: w[key], oninput: e => { const v = Number(e.target.value.replace(',', '.')); if (v > 0) { w[key] = v; c.rooms[label] = room; setDirty(true) } } }),
+    h('input', { type: 'text', inputMode: 'decimal', value: w[key], oninput: e => { const v = Number(e.target.value.replace(',', '.')); if (v > 0) { w[key] = v; c.rooms[label] = room; setDirty(true) } } }),
     h('span', { class: 'value', style: 'flex:none' }, 'm'))
   const plan = S.forecast?.map((d, i) => planText(label, d, i))
   return [
@@ -1182,9 +1182,9 @@ function sheetContent () {
   }
   if (sh.type === 'location') {
     const c = S.config
-    return formSheet(t('location'), [['lat', t('latitude'), 'number', S.home ? String(S.home.lat) : t('fenixHome'), c.lat], ['lon', t('longitude'), 'number', S.home ? String(S.home.lon) : t('fenixHome'), c.lon]], t('useThese'), async v => {
-      c.lat = v.lat === '' ? null : Number(v.lat)
-      c.lon = v.lon === '' ? null : Number(v.lon)
+    return formSheet(t('location'), [['lat', t('latitude'), 'text', S.home ? String(S.home.lat) : t('fenixHome'), c.lat], ['lon', t('longitude'), 'text', S.home ? String(S.home.lon) : t('fenixHome'), c.lon]], t('useThese'), async v => {
+      c.lat = Number(v.lat.replace(',', '.')) || null
+      c.lon = Number(v.lon.replace(',', '.')) || null
       setDirty(true)
       closeSheet()
       act(loadForecast)().then(render)
