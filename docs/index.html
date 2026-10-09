@@ -180,7 +180,7 @@ const TEXT = {
   en: {
     appName: 'Heating', setupGuide: 'Setup guide', home: 'Home', forecast: 'Forecast', settings: 'Settings', help: 'Help',
     done: 'Done', cancel: 'Cancel', saveChanges: 'Save changes', refresh: 'Refresh',
-    m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Boost', m_off: 'Off',
+    m_program: 'Schedule', m_comfort: 'Comfort', m_eco: 'Eco', m_frost: 'Frost', m_boost: 'Booster', m_off: 'Off',
     met_tmax: 'Max temperature', met_tmin: 'Min temperature', met_sunshine: 'Sunshine',
     f_0: 'South', f_m22: 'South-southeast', f_m45: 'Southeast', f_m67: 'East-southeast', f_m90: 'East', f_m112: 'East-northeast', f_m135: 'Northeast', f_m157: 'North-northeast', f_180: 'North', f_157: 'North-northwest', f_135: 'Northwest', f_112: 'West-northwest', f_90: 'West', f_67: 'West-southwest', f_45: 'Southwest', f_22: 'South-southwest',
     errSignInFirst: 'Sign in to Fenix first', errWrongLogin: 'Wrong email or password', errSignIn: 'Sign-in failed ({0})', errNoHome: 'This account has no home', errFenix: 'Fenix error {0}',
@@ -221,7 +221,7 @@ const TEXT = {
   cs: {
     appName: 'Topení', setupGuide: 'Návod k nastavení', home: 'Domů', forecast: 'Předpověď', settings: 'Nastavení', help: 'Nápověda',
     done: 'Hotovo', cancel: 'Zrušit', saveChanges: 'Uložit změny', refresh: 'Obnovit',
-    m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Boost', m_off: 'Vypnuto',
+    m_program: 'Program', m_comfort: 'Komfort', m_eco: 'Útlum', m_frost: 'Nezámrz', m_boost: 'Booster', m_off: 'Vypnuto',
     met_tmax: 'Maximální teplota', met_tmin: 'Minimální teplota', met_sunshine: 'Slunce',
     f_0: 'Jih', f_m22: 'Jihojihovýchod', f_m45: 'Jihovýchod', f_m67: 'Východojihovýchod', f_m90: 'Východ', f_m112: 'Východoseverovýchod', f_m135: 'Severovýchod', f_m157: 'Severoseverovýchod', f_180: 'Sever', f_157: 'Severoseverozápad', f_135: 'Severozápad', f_112: 'Západoseverozápad', f_90: 'Západ', f_67: 'Západojihozápad', f_45: 'Jihozápad', f_22: 'Jihojihozápad',
     errSignInFirst: 'Nejdřív se přihlas do Fenixu', errWrongLogin: 'Špatný e-mail nebo heslo', errSignIn: 'Přihlášení selhalo ({0})', errNoHome: 'Účet nemá žádnou domácnost', errFenix: 'Chyba Fenixu {0}',
@@ -634,7 +634,7 @@ function zoneSheet (label) {
       onclick: () => mm !== m && setMode(label, mm)
     }, icon(mm.icon), h('span', { style: mm === m ? '' : 'color:var(--fg)' }, modeLabel(mm))))),
     h('div', { class: 'section' }, t('temperatures')),
-    h('div', { class: 'group' }, sp(MODES[1], 'consigne_confort'), sp(MODES[2], 'consigne_eco')),
+    h('div', { class: 'group' }, sp(MODES[1], 'consigne_confort'), sp(MODES[2], 'consigne_eco'), sp(MODES[4], 'consigne_boost')),
     /^[0-9A-F]{336}$/i.test(d.programme) ? h('div', { class: 'group', style: 'margin-top:16px' },
       navRow(t('weeklyProgram'), null, () => openSheet({ type: 'program', label, slots: toSlots(d.programme), day: (new Date().getDay() + 6) % 7, brush: 1 }))) : null,
     h('div', { class: 'status' }, S.status[label] || '')
