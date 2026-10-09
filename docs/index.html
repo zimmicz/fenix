@@ -634,14 +634,14 @@ function zoneSheet (label) {
       onclick: () => mm !== m && setMode(label, mm)
     }, icon(mm.icon), h('span', { style: mm === m ? '' : 'color:var(--fg)' }, modeLabel(mm))))),
     h('div', { class: 'section' }, t('temperatures')),
-    h('div', { class: 'group' }, sp(MODES[1], 'consigne_confort'), sp(MODES[2], 'consigne_eco'), sp(MODES[4], 'consigne_boost')),
+    h('div', { class: 'group' }, sp(MODES[2], 'consigne_eco'), sp(MODES[1], 'consigne_confort'), sp(MODES[4], 'consigne_boost')),
     /^[0-9A-F]{336}$/i.test(d.programme) ? h('div', { class: 'group', style: 'margin-top:16px' },
       navRow(t('weeklyProgram'), null, () => openSheet({ type: 'program', label, slots: toSlots(d.programme), day: (new Date().getDay() + 6) % 7, brush: 1 }))) : null,
     h('div', { class: 'status' }, S.status[label] || '')
   ]
 }
 
-const LEVELS = [{ code: 1, mode: MODES[1] }, { code: 0, mode: MODES[2] }, { code: 3, mode: MODES[4] }, { code: 2, mode: MODES[3] }]
+const LEVELS = [{ code: 0, mode: MODES[2] }, { code: 1, mode: MODES[1] }, { code: 3, mode: MODES[4] }, { code: 2, mode: MODES[3] }]
 const levelColor = code => LEVELS.find(l => l.code === code).mode.color
 const toSlots = p => [...p].flatMap(c => { const n = parseInt(c, 16); return [n >> 2, n & 3] })
 const fromSlots = s => s.filter((_, i) => i % 2 === 0).map((v, i) => ((v << 2) | s[i * 2 + 1]).toString(16).toUpperCase()).join('')
