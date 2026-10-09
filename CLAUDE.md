@@ -27,4 +27,5 @@ Web app: `docs/index.html` (GitHub Pages from `/docs`), single file, no build, n
 - Zones usually run raw `gv_mode` values outside the named map (8, 16 seen: unit schedules). Sun control restores the recorded raw `gv_mode`/`nv_mode`, never a mode name; the web app's Schedule button restores the last seen raw code (localStorage).
 - Sun control math lives twice: `sunWindow` in forecast.go and `sunWindow` in docs/index.html (preview). Keep them identical.
 - Forecast dates come from Open-Meteo `timezone=auto`, so "today" is the home's local date; state compares dates as `YYYY-MM-DD` strings.
+- UI is Czech + English: app strings in `TEXT`/`HELP` (docs/index.html), robot notifications in `messages` (forecast.go), language from `config.json` `lang`. Every new string needs both languages.
 - Breaking a command's CLI breaks every user's hourly workflow (they track `@main`).
